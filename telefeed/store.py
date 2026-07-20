@@ -8,7 +8,7 @@ Tables:
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Generator, Optional
 
@@ -87,7 +87,7 @@ def save_match(
                 (area, channel, message_id, text, url, matched_at, status)
             VALUES (?, ?, ?, ?, ?, ?, 'new')
             """,
-            (area, channel, message_id, text, url, datetime.utcnow().isoformat()),
+            (area, channel, message_id, text, url, datetime.now(timezone.utc).isoformat()),
         )
 
 

@@ -15,9 +15,20 @@ dependencies = [
     "google-genai>=0.1.1",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+]
+
 [project.scripts]
 telefeed = "telefeed.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["telefeed*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
