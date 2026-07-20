@@ -81,15 +81,17 @@ class AIScorer:
         self.calls_cached: int = 0
 
     @classmethod
-    def from_env(cls) -> "AIScorer":
-        """Build scorer from GEMINI_API_KEY environment variable."""
-        key = os.getenv("GEMINI_API_KEY", "")
-        if not key or key == "your_gemini_api_key_here":
+    def from_env(cls, key: str = "") -> "AIScorer":
+        """Build scorer from Gemini API key string or GEMINI_API_KEY environment variable."""
+        api_key = key or os.getenv("GEMINI_API_KEY", "")
+        if not api_key or api_key == "your_gemini_api_key_here":
             raise ValueError(
-                "GEMINI_API_KEY is not set. "
-                "Add it to your .env file — get a free key at https://aistudio.google.com/apikey"
+                "Gemini API key is not configured.\n"
+                "Add 'api_key' under 'gemini:' in your config.yaml "
+                "or set GEMINI_API_KEY in environment.\n"
+                "Get a free key at https://aistudio.google.com/apikey"
             )
-        return cls(api_key=key)
+        return cls(api_key=api_key)
 
     async def score(
         self,

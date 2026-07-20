@@ -1,0 +1,225 @@
+"""
+Configuration & XDG Path Resolution for TeleFeed.
+
+Resolves paths according to the XDG Base Directory specification:
+  Config  : ~/.config/telefeed/config.yaml
+  Database: ~/.local/state/telefeed/telefeed.db
+  Session : ~/.config/telefeed/telefeed.session
+
+All credentials and options live inside config.yaml (no separate .env file).
+"""
+
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Optional
+
+import yaml
+
+
+XDG_CONFIG_HOME = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
+XDG_STATE_HOME = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+
+DEFAULT_CONFIG_DIR = XDG_CONFIG_HOME / "telefeed"
+DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
+
+DEFAULT_STATE_DIR = XDG_STATE_HOME / "telefeed"
+DEFAULT_DB_PATH = DEFAULT_STATE_DIR / "telefeed.db"
+DEFAULT_SESSION_FILE = DEFAULT_CONFIG_DIR / "telefeed.session"
+
+
+@dataclass
+class TelegramConfig:
+    api_id: int = 0
+    api_hash: str = ""
+    phone: str = ""
+
+
+@dataclass
+class GeminiConfig:
+    api_key: str = ""
+
+
+@dataclass
+class TelegramBotNotifyConfig:
+    enabled: bool = False
+    bot_token: str = ""
+    chat_id: str = ""
+
+
+@dataclass
+class NotificationConfig:
+    desktop: bool = True
+    telegram_bot: TelegramBotNotifyConfig = field(default_factory=TelegramBotNotifyConfig)
+
+
+@dataclass
+class TeleFeedConfig:
+    matcher: str = "keywords"
+    ai_threshold: int = 65
+    telegram: TelegramConfig = field(default_factory=TelegramConfig)
+    gemini: GeminiConfig = field(default_factory=GeminiConfig)
+    notifications: NotificationConfig = field(default_factory=NotificationConfig)
+    areas: list[dict[str, Any]] = field(default_factory=list)
+
+    config_path: Path = DEFAULT_CONFIG_PATH
+    db_path: Path = DEFAULT_DB_PATH
+    session_path: Path = DEFAULT_SESSION_FILE
+
+
+def get_config_path(custom_path: Optional[str] = None) -> Path:
+    """Resolve config.yaml path using flag -> env -> ./ -> XDG fallback."""
+    if custom_path:
+        return Path(custom_path).expanduser().resolve()
+    
+    env_path = os.getenv("CONFIG_PATH")
+    if env_path:
+        return Path(env_path).expanduser().resolve()
+    
+    cwd_config = Path.cwd() / "config.yaml"
+    if cwd_config.exists():
+        return cwd_config
+    
+    return DEFAULT_CONFIG_PATH
+
+
+def get_db_path() -> Path:
+    """Resolve db path (env -> ./ -> XDG)."""
+    env_db = os.getenv("DB_PATH")
+    if env_db:
+        return Path(env_db).expanduser().resolve()
+    
+    cwd_db = Path.cwd() / "telefeed.db"
+    if cwd_db.exists():
+        return cwd_db
+    
+    DEFAULT_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    return DEFAULT_DB_PATH
+
+
+def get_session_path() -> Path:
+    """Resolve session path (env -> ./ -> XDG)."""
+    env_session = os.getenv("SESSION_FILE")
+    if env_session:
+        return Path(env_session).expanduser().resolve()
+    
+    cwd_session = Path.cwd() / "telefeed.session"
+    if cwd_session.exists():
+        return cwd_session
+    
+    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    return DEFAULT_SESSION_FILE
+
+
+def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
+    """Load and parse config.yaml into a structured TeleFeedConfig object."""
+    config_path = get_config_path(custom_path)
+    if not config_path.exists():
+        # Return default config with resolved paths
+        return TeleFeedConfig(
+            config_path=config_path,
+            db_path=get_db_path(),
+            session_path=get_session_path(),
+        )
+
+    with config_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    tg_raw = data.get("telegram", {})
+    # Fallback to env vars for backward compatibility
+    api_id = int(tg_raw.get("api_id") or os.getenv("TELEGRAM_API_ID") or 0)
+    api_hash = str(tg_raw.get("api_hash") or os.getenv("TELEGRAM_API_HASH") or "")
+    phone = str(tg_raw.get("phone") or os.getenv("TELEGRAM_PHONE") or "")
+
+    gemini_raw = data.get("gemini", {})
+    gemini_key = str(gemini_raw.get("api_key") or os.getenv("GEMINI_API_KEY") or "")
+
+    notif_raw = data.get("notifications", {})
+    desktop_enabled = bool(notif_raw.get("desktop", True))
+    
+    bot_raw = notif_raw.get("telegram_bot", {})
+    bot_enabled = bool(bot_raw.get("enabled", False))
+    bot_token = str(bot_raw.get("bot_token", ""))
+    chat_id = str(bot_raw.get("chat_id", ""))
+
+    matcher = str(data.get("matcher", "keywords")).lower().strip()
+    if matcher not in ("keywords", "ai"):
+        matcher = "keywords"
+    
+    threshold = int(data.get("ai_threshold", 65))
+    threshold = max(0, min(100, threshold))
+
+    return TeleFeedConfig(
+        matcher=matcher,
+        ai_threshold=threshold,
+        telegram=TelegramConfig(api_id=api_id, api_hash=api_hash, phone=phone),
+        gemini=GeminiConfig(api_key=gemini_key),
+        notifications=NotificationConfig(
+            desktop=desktop_enabled,
+            telegram_bot=TelegramBotNotifyConfig(
+                enabled=bot_enabled,
+                bot_token=bot_token,
+                chat_id=chat_id,
+            ),
+        ),
+        areas=data.get("areas", []),
+        config_path=config_path,
+        db_path=get_db_path(),
+        session_path=get_session_path(),
+    )
+
+
+CONFIG_TEMPLATE = """# TeleFeed Configuration
+# Define credentials, notification settings, and areas of concern.
+
+matcher: ai              # 'keywords' or 'ai'
+ai_threshold: 65         # Relevance score threshold (0-100)
+
+telegram:
+  api_id: YOUR_TELEGRAM_API_ID
+  api_hash: "YOUR_TELEGRAM_API_HASH"
+  phone: "+YOUR_PHONE_NUMBER"
+
+gemini:
+  api_key: "YOUR_GEMINI_API_KEY"
+
+notifications:
+  desktop: true          # Send OS desktop popup notifications
+  telegram_bot:
+    enabled: false       # Set to true to push matched posts to your Telegram chat
+    bot_token: ""        # From @BotFather
+    chat_id: ""          # Your personal Telegram user ID or chat ID
+
+areas:
+  - name: "Remote Software Jobs"
+    description: >
+      Job postings for software developers or engineers. Preferably remote
+      positions. Interested in backend, full-stack, Python, Rust, or Go roles.
+      Not interested in internships, unpaid positions, or on-site only roles.
+    keywords:
+      - software engineer
+      - software developer
+      - backend developer
+      - full stack
+      - python developer
+      - remote
+      - hiring
+      - job opening
+    negative_keywords:
+      - internship
+      - unpaid
+      - volunteer
+
+  - name: "AI & Machine Learning News"
+    description: >
+      News, papers, tools, or discussions about large language models,
+      generative AI, AI agents, or machine learning research.
+    keywords:
+      - llm
+      - large language model
+      - generative ai
+      - gpt
+      - transformer
+      - ai agent
+    negative_keywords: []
+"""
