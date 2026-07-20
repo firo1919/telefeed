@@ -1,149 +1,152 @@
 # TeleFeed 📡
 
 > **A personalized Telegram feed aggregator.**
-> Stop manually searching channels. Define your interests once — TeleFeed watches for you.
+> Stop manually searching channels. Define your interests once — TeleFeed watches for you in the background and notifies you of key updates.
 
 ---
 
-## What it does
+## Features
 
-TeleFeed connects to Telegram as **you** (using MTProto via Telethon) and filters messages from channels/groups based on **Areas of Concern** you define in a YAML config file. Each area has keywords, negative keywords, and a description of your intent.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  config.yaml                                                │
-│  ─────────────                                              │
-│  Area: "Remote Dev Jobs"                                    │
-│    keywords: [python, rust, remote, hiring]                 │
-│    negative: [internship, unpaid]                           │
-│    sources:  [remotejobs, devjobs_channel]                  │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-               Telethon MTProto
-                       │
-              ┌────────▼────────┐
-              │  TeleFeed CLI   │
-              │  ─────────────  │
-              │  fetch          │  ← pull history
-              │  fetch --live   │  ← real-time watch
-              │  show-matches   │  ← view saved results
-              └─────────────────┘
-```
+- 🎯 **Areas of Concern**: Group keywords, negative keywords, and semantic intent into named topic areas.
+- ⚡ **Auto-Discovery**: Automatically scans all broadcast channels and supergroups you subscribe to on Telegram.
+- 🤖 **AI Matching (Gemini)**: Optional smart semantic matching using Google Gemini 2.5 Flash (`--smart` or `matcher: ai`).
+- 🖥️ **Desktop OS Notifications**: Native popup alerts on Linux, macOS, and Windows when relevant posts match.
+- 💬 **Telegram Bot Push Alerts**: Direct notifications forwarded to your Telegram user chat via a Telegram bot.
+- ⚙️ **Background Systemd Service**: Easily install and run as an automated `systemd` user daemon.
+- 📦 **Single Config File**: Zero `.env` files — all credentials, notification rules, and topic filters live in `config.yaml`.
 
 ---
 
 ## Quick Start
 
-### 1. Get Telegram API credentials
+### 1. Installation
 
-1. Go to **https://my.telegram.org** and log in.
-2. Click **"API development tools"**.
-3. Create a new app (name doesn't matter).
-4. Copy your **`api_id`** and **`api_hash`**.
-
-### 2. Set up the project
+Install via `pipx` (recommended for CLI tools):
 
 ```bash
-cd telefeed
+pipx install git+https://github.com/firo1919/telefeed.git
+```
 
-# Create and activate a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
+Or install locally in editable mode:
 
-# Install dependencies
+```bash
 pip install -e .
 ```
 
-### 3. Configure credentials
+### 2. Initialize Configuration
+
+Initialize your configuration file:
 
 ```bash
-cp .env.example .env
-# Edit .env with your api_id, api_hash, and phone number
+telefeed init
 ```
 
-### 4. Configure your areas of concern
+This creates `~/.config/telefeed/config.yaml` (following XDG standards).
 
-Edit **`config.yaml`** to add the channels you want to watch and the keywords that matter to you.
+### 3. Add Telegram Credentials
 
-### 5. Authenticate
+Edit `~/.config/telefeed/config.yaml` to add your Telegram credentials from [my.telegram.org/apps](https://my.telegram.org/apps):
+
+```yaml
+matcher: ai
+ai_threshold: 65
+
+telegram:
+  api_id: 12345678
+  api_hash: "your_api_hash_here"
+  phone: "+1234567890"
+
+gemini:
+  api_key: "your_gemini_api_key_here"
+
+notifications:
+  desktop: true
+  telegram_bot:
+    enabled: false
+    bot_token: ""
+    chat_id: ""
+```
+
+### 4. Authenticate
 
 ```bash
 telefeed auth
-# or: python -m telefeed auth
 ```
 
-You'll receive an OTP on Telegram. Enter it when prompted. Your session is saved — you won't need to log in again.
+Enter your Telegram OTP code when prompted. The session is saved to `~/.config/telefeed/telefeed.session`.
 
-### 6. Fetch & filter
+### 5. Validate setup with `doctor`
 
 ```bash
-# Pull recent messages and show matches
-telefeed fetch
-
-# Pull only the last 200 messages per channel
-telefeed fetch --limit 200
-
-# Watch in real-time (Ctrl-C to stop)
-telefeed fetch --live
-
-# Only run one specific area
-telefeed fetch --area "Remote Dev Jobs"
-
-# Show previously saved matches
-telefeed show-matches
-telefeed show-matches --area "Remote Dev Jobs" --status new
+telefeed doctor
 ```
 
 ---
 
-## Project structure
+## Usage
+
+```bash
+# Pull recent messages and print matches
+telefeed fetch
+
+# Watch in real-time with notifications enabled
+telefeed fetch --live --notify
+
+# Restrict to a single area
+telefeed fetch --area "Remote Dev Jobs"
+
+# Show previously saved matches from database
+telefeed show-matches
+```
+
+---
+
+## Running in Background (`systemd`)
+
+TeleFeed includes built-in commands to manage a background `systemd` user service:
+
+```bash
+# Install and enable background service (runs `telefeed fetch --live --notify`)
+telefeed service install
+
+# Check service status
+telefeed service status
+
+# Tail live service logs
+telefeed service logs
+
+# Stop or restart service
+telefeed service stop
+telefeed service restart
+
+# Uninstall service
+telefeed service uninstall
+```
+
+---
+
+## Project Structure
 
 ```
 telefeed/
-├── .env                  # Your credentials (git-ignored)
-├── .env.example          # Template
-├── config.yaml           # Areas of concern
+├── config.yaml           # Default configuration template
 ├── pyproject.toml
-├── requirements.txt
 └── telefeed/
     ├── __init__.py
     ├── __main__.py       # python -m telefeed
-    ├── cli.py            # Click CLI commands
-    ├── client.py         # Telethon wrapper
-    ├── filters.py        # Keyword matching engine
-    ├── store.py          # SQLite persistence
-    └── display.py        # Rich terminal output
+    ├── cli.py            # Click CLI commands & service actions
+    ├── client.py         # Telethon MTProto wrapper
+    ├── config.py         # XDG path resolver & YAML config loader
+    ├── display.py        # Rich terminal UI rendering
+    ├── filters.py        # Pure keyword matching engine
+    ├── ai_filter.py      # Gemini 2.5 Flash semantic scoring
+    ├── notifications.py  # OS desktop notifications & Telegram Bot API push
+    ├── service.py        # Systemd user service installer & manager
+    └── store.py          # SQLite persistence layer
 ```
 
 ---
 
-## How the filtering works
+## License
 
-1. **Keyword gate** — any message containing at least one keyword in an area is a candidate.
-2. **Negative keyword gate** — if a message contains any negative keyword, it is immediately discarded.
-3. **Relevance score** — `matched_keywords / total_keywords` gives a 0–100% score shown in the terminal.
-
-> **Coming in Phase 2:** AI-powered semantic matching using Gemini, triggered by `--smart` flag.
-
----
-
-## Privacy & security
-
-- Your credentials are stored in `.env` and the session in `telefeed.session`. **Never commit these to git.**
-- TeleFeed logs in as your user account (not a bot). It has the same access level as you do manually.
-- All data stays local (SQLite file). Nothing is sent to external servers by TeleFeed itself.
-
----
-
-## .gitignore recommendation
-
-Add these to `.gitignore`:
-
-```
-.env
-*.session
-telefeed.db
-__pycache__/
-.venv/
-*.egg-info/
-```
+MIT
