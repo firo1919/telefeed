@@ -1,7 +1,7 @@
 # TeleFeed 📡
 
-> **A personalized Telegram feed aggregator.**
-> Stop manually searching channels. Define your interests once — TeleFeed watches for you in the background and notifies you of key updates.
+**A personalized Telegram feed aggregator.**
+Stop manually searching channels. Define your interests once — TeleFeed watches for you in the background and notifies you of key updates.
 
 ---
 
@@ -21,10 +21,8 @@
 
 ### 1. Installation
 
-Install via `pipx` (recommended for CLI tools):
-
 ```bash
-pipx install git+https://github.com/firo1919/telefeed.git
+pip install git+https://github.com/firo1919/telefeed.git
 ```
 
 Or install locally in editable mode:
@@ -41,11 +39,11 @@ Initialize your configuration file:
 telefeed init
 ```
 
-This creates `~/.config/telefeed/config.yaml` (following XDG standards).
+This creates `~/.config/telefeed/config.yaml`
 
-### 3. Add Telegram Credentials
+### 3. Add Telegram and AI Provider Credentials
 
-Edit `~/.config/telefeed/config.yaml` to add your Telegram credentials from [my.telegram.org/apps](https://my.telegram.org/apps):
+Edit `~/.config/telefeed/config.yaml`
 
 ```yaml
 matcher: ai
@@ -83,7 +81,7 @@ telefeed doctor
 
 ---
 
-## Usage
+## CLI Usage
 
 ```bash
 # Pull recent messages and print matches
@@ -101,7 +99,7 @@ telefeed show-matches
 
 ---
 
-## Running in Background (`systemd`)
+## Running in Background (`systemd`) on Linux
 
 TeleFeed includes built-in commands to manage a background `systemd` user service:
 
@@ -144,9 +142,3 @@ telefeed/
     ├── service.py        # Systemd user service installer & manager
     └── store.py          # SQLite persistence layer
 ```
-
----
-
-## License
-
-MIT
