@@ -147,6 +147,8 @@ class TeleFeedEngine:
                     message_id=msg.id,
                     text=msg.text,
                     url=url,
+                    score=result.score,
+                    ai_reason=result.ai_reason,
                 )
         return True
 

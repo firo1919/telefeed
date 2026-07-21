@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-dark-bg: #0f172a;
+  --color-glass: rgba(15, 23, 42, 0.6);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  @apply bg-[#0b1120] text-slate-200 font-sans antialiased min-h-screen selection:bg-blue-500/30;
+  background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 400px),
+                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 400px);
+}
+
+.glass-panel {
+  @apply bg-[var(--color-glass)] backdrop-blur-xl border border-[var(--color-glass-border)] rounded-2xl shadow-xl shadow-black/20;
+}
+
+.input-field {
+  @apply w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all;
+}
+
+.label-text {
+  @apply block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5;
+}
+
+.nav-btn.active {
+  @apply text-blue-400 bg-blue-500/10 border-l-2 border-blue-500 rounded-l-none;
+}

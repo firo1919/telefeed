@@ -12,13 +12,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from telefeed.config import XDG_CONFIG_HOME, DEFAULT_STATE_DIR
+from telefeed.config import DEFAULT_CONFIG_DIR, DEFAULT_STATE_DIR
 from telefeed.display import print_error, print_info, print_success, print_warning
 
 
 IS_WINDOWS = platform.system().lower() == "windows"
 
-SYSTEMD_USER_DIR = XDG_CONFIG_HOME / "systemd" / "user"
+SYSTEMD_USER_DIR = DEFAULT_CONFIG_DIR / "systemd" / "user"
 SERVICE_FILE_PATH = SYSTEMD_USER_DIR / "telefeed.service"
 
 if IS_WINDOWS:
