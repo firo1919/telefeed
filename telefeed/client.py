@@ -8,6 +8,8 @@ Handles:
 """
 
 import asyncio
+import json
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Callable, Optional
@@ -22,6 +24,7 @@ from telethon.errors import (
 )
 from telethon.tl.types import Message
 
+from telefeed.config import DEFAULT_CACHE_DIR
 from telefeed.display import console, print_error, print_info, print_success, print_warning
 
 
@@ -182,8 +185,8 @@ class TeleFeedClient:
         resolved_names: list[str] = []
 
         for display_name, entity_or_username in channels:
-            if isinstance(entity_or_username, str):
-                # Explicit username from config — resolve it
+            if isinstance(entity_or_username, (str, int)):
+                # Explicit username or cached integer ID — resolve it
                 try:
                     entity = await self._client.get_entity(entity_or_username)
                     resolved_entities.append(entity)
@@ -250,6 +253,28 @@ class TeleFeedClient:
             include_groups: If True (default), include supergroups / megagroups.
         """
         results: list[ChannelInfo] = []
+        cache_file = DEFAULT_CACHE_DIR / "channels.json"
+
+        # Try to load from cache
+        if cache_file.exists():
+            try:
+                data = json.loads(cache_file.read_text(encoding="utf-8"))
+                if time.time() - data.get("timestamp", 0) < 3600:  # 1 hour cache
+                    for item in data.get("channels", []):
+                        if not include_groups and not item.get("is_broadcast"):
+                            continue
+                        results.append(ChannelInfo(
+                            key=item["key"],
+                            title=item["title"],
+                            entity=item["entity_id"],
+                            unread_count=item["unread_count"],
+                            is_broadcast=item.get("is_broadcast", True),
+                        ))
+                    return results
+            except Exception as e:
+                print_warning(f"Failed to read channel cache: {e}")
+
+        cache_data = []
 
         async for dialog in self._client.iter_dialogs():
             entity = dialog.entity
@@ -257,19 +282,38 @@ class TeleFeedClient:
             is_broadcast = getattr(entity, "broadcast", False)
             is_megagroup = getattr(entity, "megagroup", False)
 
-            if is_broadcast or (include_groups and is_megagroup):
+            if is_broadcast or is_megagroup:
                 username = getattr(entity, "username", None)
                 key = username if username else f"id:{entity.id}"
                 title = dialog.title or key
                 unread = getattr(dialog.dialog, "unread_count", 0) or 0
 
-                results.append(ChannelInfo(
-                    key=key,
-                    title=title,
-                    entity=entity,
-                    unread_count=unread,
-                    is_broadcast=is_broadcast,
-                ))
+                cache_data.append({
+                    "key": key,
+                    "title": title,
+                    "entity_id": entity.id,
+                    "unread_count": unread,
+                    "is_broadcast": is_broadcast,
+                })
+
+                if is_broadcast or (include_groups and is_megagroup):
+                    results.append(ChannelInfo(
+                        key=key,
+                        title=title,
+                        entity=entity,
+                        unread_count=unread,
+                        is_broadcast=is_broadcast,
+                    ))
+
+        # Save to cache
+        try:
+            DEFAULT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            cache_file.write_text(json.dumps({
+                "timestamp": time.time(),
+                "channels": cache_data
+            }), encoding="utf-8")
+        except Exception as e:
+            print_warning(f"Failed to write channel cache: {e}")
 
         return results
 

@@ -19,12 +19,15 @@ import yaml
 
 XDG_CONFIG_HOME = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
 XDG_STATE_HOME = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+XDG_CACHE_HOME = Path(os.getenv("XDG_CACHE_HOME", Path.home() / ".cache"))
 
 DEFAULT_CONFIG_DIR = XDG_CONFIG_HOME / "telefeed"
 DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
 
 DEFAULT_STATE_DIR = XDG_STATE_HOME / "telefeed"
 DEFAULT_DB_PATH = DEFAULT_STATE_DIR / "telefeed.db"
+
+DEFAULT_CACHE_DIR = XDG_CACHE_HOME / "telefeed"
 DEFAULT_SESSION_FILE = DEFAULT_CONFIG_DIR / "telefeed.session"
 
 
