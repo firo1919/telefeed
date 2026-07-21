@@ -12,18 +12,14 @@ Commands:
 """
 
 import asyncio
-import os
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
 import click
-import yaml
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from telefeed import __app_name__, __version__
-from telefeed.ai_filter import build_scorer, ai_check_all_areas, BaseScorer
-from telefeed.client import ChannelInfo, TeleFeedClient, build_message_url
+from telefeed.ai_filter import build_scorer, BaseScorer
+from telefeed.client import TeleFeedClient
 from telefeed.config import (
     CONFIG_TEMPLATE,
     DEFAULT_CONFIG_PATH,
@@ -31,18 +27,16 @@ from telefeed.config import (
     load_telefeed_config,
 )
 from telefeed.display import (
-    console,
     print_areas,
     print_banner,
     print_error,
     print_info,
-    print_match,
     print_matches_table,
     print_section,
     print_success,
     print_warning,
 )
-from telefeed.filters import check_all_areas, load_areas_from_config
+from telefeed.filters import load_areas_from_config
 from telefeed.notifications import NotificationManager
 from telefeed.service import (
     install_service,
@@ -50,13 +44,7 @@ from telefeed.service import (
     service_logs,
     uninstall_service,
 )
-from telefeed.store import (
-    get_matches,
-    init_db,
-    is_seen,
-    mark_seen,
-    save_match,
-)
+from telefeed.store import get_matches, init_db
 
 
 def _validate_config(cfg: TeleFeedConfig) -> None:
@@ -276,298 +264,20 @@ def fetch(
 
     notifier = NotificationManager(cfg.notifications) if notify else None
 
-    areas_watching_all = [a for a in all_areas if not a.sources]
-    areas_with_sources = [a for a in all_areas if a.sources]
-
-    async def _build_source_map() -> dict:
-        source_map: dict[str, dict] = {}
-
-        def _add(key: str, area_obj, entity=None, title: str = "",
-                 is_broadcast: bool = False, unread_count: int = 0) -> None:
-            if key not in source_map:
-                source_map[key] = {
-                    "areas": [],
-                    "entity": entity,
-                    "title": title or key,
-                    "is_broadcast": is_broadcast,
-                    "unread_count": unread_count,
-                }
-            if area_obj not in source_map[key]["areas"]:
-                source_map[key]["areas"].append(area_obj)
-
-        for a in areas_with_sources:
-            for src in a.sources:
-                ch = src.lstrip("@")
-                _add(ch, a, entity=None, title=ch)
-
-        if areas_watching_all:
-            print_info(
-                f"[bold]{len(areas_watching_all)}[/bold] area(s) have no sources — "
-                "discovering your subscribed channels…"
-            )
-            subscribed = await client.get_subscribed_channels(
-                include_groups=not no_groups
-            )
-            print_success(
-                f"Found [bold]{len(subscribed)}[/bold] subscribed channel(s)/group(s)."
-            )
-            for ch_info in subscribed:
-                for a in areas_watching_all:
-                    _add(
-                        ch_info.key, a,
-                        entity=ch_info.entity,
-                        title=ch_info.title,
-                        is_broadcast=ch_info.is_broadcast,
-                        unread_count=ch_info.unread_count,
-                    )
-
-        return source_map
-
-    match_count = 0
-    total_checked = 0
-
-    async def _run_fetch() -> None:
-        nonlocal match_count, total_checked
-        await client.connect_and_auth()
-        source_area_map = await _build_source_map()
-
-        if not source_area_map:
-            print_warning("No channels to watch. Subscribe to channels or add sources to config.yaml.")
-            return
-
-        print_section(f"Scanning {len(source_area_map)} channel(s)")
-
-        for channel_key, info in source_area_map.items():
-            areas_for_channel = info["areas"]
-            entity = info["entity"]
-            title = info["title"]
-
-            print_section(f"Fetching {title}")
-            msg_count = 0
-            channel_arg = entity if entity is not None else channel_key
-
-            async for msg in client.fetch_messages(channel_arg, limit=limit):
-                total_checked += 1
-                msg_count += 1
-
-                if is_seen(db_path, channel_key, msg.id):
-                    continue
-                mark_seen(db_path, channel_key, msg.id)
-
-                if ai_scorer:
-                    results = await ai_check_all_areas(areas_for_channel, msg.text, ai_scorer, cfg.ai_threshold)
-                else:
-                    results = check_all_areas(areas_for_channel, msg.text)
-
-                for result in results:
-                    match_count += 1
-                    url = build_message_url(channel_key, msg.id)
-                    ts = msg.date.replace(tzinfo=None) if msg.date else None
-
-                    print_match(
-                        area_name=result.area.name,
-                        channel=title,
-                        message_id=msg.id,
-                        text=msg.text,
-                        score=result.score,
-                        matched_keywords=result.matched_keywords,
-                        url=url,
-                        timestamp=ts,
-                        ai_reason=result.ai_reason,
-                    )
-
-                    if notifier:
-                        await notifier.notify_match(
-                            area_name=result.area.name,
-                            channel_title=title,
-                            text=msg.text,
-                            score=result.score,
-                            url=url,
-                            ai_reason=result.ai_reason,
-                        )
-
-                    if not no_save:
-                        save_match(
-                            db_path=db_path,
-                            area=result.area.name,
-                            channel=channel_key,
-                            message_id=msg.id,
-                            text=msg.text,
-                            url=url,
-                        )
-
-            print_info(f"Checked {msg_count} message(s) from {title}")
-
-        if match_count == 0:
-            print_warning("No matches found. Try adjusting your keywords in config.yaml.")
-        else:
-            print_success(f"Found [bold]{match_count}[/bold] match(es) from {total_checked} message(s) checked.")
-
-    async def _run_live() -> None:
-        nonlocal match_count
-        await client.connect_and_auth()
-        source_area_map = await _build_source_map()
-
-        if not source_area_map:
-            print_warning("No channels to watch. Subscribe to channels or add sources to config.yaml.")
-            return
-
-        if notifier:
-            await notifier.notify_startup(len(source_area_map), len(all_areas))
-
-        backfill_cutoff = datetime.now(timezone.utc) - timedelta(days=backfill_days)
-        backfill_total = 0
-        backfill_matches = 0
-
-        print_section(
-            f"Backfilling {len(source_area_map)} channel(s) "
-            f"(channels: {backfill_days}d history | groups: unread only)"
-        )
-
-        for channel_key, info in source_area_map.items():
-            areas_for_channel = info["areas"]
-            entity = info["entity"]
-            title = info["title"]
-            is_broadcast = info.get("is_broadcast", False)
-            unread = info.get("unread_count", 0)
-
-            channel_arg = entity if entity is not None else channel_key
-
-            if is_broadcast:
-                fetch_kwargs = dict(limit=None, min_date=backfill_cutoff)
-                scope_label = f"{backfill_days}d history"
-            elif unread > 0:
-                fetch_kwargs = dict(limit=min(unread, 500))
-                scope_label = f"{unread} unread"
-            else:
-                continue
-
-            msg_count = 0
-            async for msg in client.fetch_messages(channel_arg, **fetch_kwargs):
-                backfill_total += 1
-                msg_count += 1
-
-                if is_seen(db_path, channel_key, msg.id):
-                    continue
-                mark_seen(db_path, channel_key, msg.id)
-
-                if ai_scorer:
-                    results = await ai_check_all_areas(areas_for_channel, msg.text, ai_scorer, cfg.ai_threshold)
-                else:
-                    results = check_all_areas(areas_for_channel, msg.text)
-
-                for result in results:
-                    backfill_matches += 1
-                    url = build_message_url(channel_key, msg.id)
-                    ts = msg.date.replace(tzinfo=None) if msg.date else None
-                    print_match(
-                        area_name=result.area.name,
-                        channel=title,
-                        message_id=msg.id,
-                        text=msg.text,
-                        score=result.score,
-                        matched_keywords=result.matched_keywords,
-                        url=url,
-                        timestamp=ts,
-                        ai_reason=result.ai_reason,
-                    )
-                    if notifier:
-                        await notifier.notify_match(
-                            area_name=result.area.name,
-                            channel_title=title,
-                            text=msg.text,
-                            score=result.score,
-                            url=url,
-                            ai_reason=result.ai_reason,
-                        )
-                    if not no_save:
-                        save_match(
-                            db_path=db_path,
-                            area=result.area.name,
-                            channel=channel_key,
-                            message_id=msg.id,
-                            text=msg.text,
-                            url=url,
-                        )
-
-            if msg_count > 0:
-                print_info(f"  {title} ({scope_label}): {msg_count} msgs, {backfill_matches} match(es)")
-
-        if backfill_matches == 0:
-            print_info("Backfill complete — no matches in history. Now watching live…")
-        else:
-            print_success(
-                f"Backfill complete — [bold]{backfill_matches}[/bold] match(es) "
-                f"from {backfill_total} message(s). Now watching live…"
-            )
-
-        channel_pairs = [
-            (info["title"], info["entity"] if info["entity"] is not None else ch_key)
-            for ch_key, info in source_area_map.items()
-        ]
-
-        async def _async_on_message(display_name: str, msg) -> None:
-            nonlocal match_count
-            ch_key = next(
-                (k for k, v in source_area_map.items() if v["title"] == display_name),
-                display_name,
-            )
-            if is_seen(db_path, ch_key, msg.id):
-                return
-            mark_seen(db_path, ch_key, msg.id)
-
-            areas_for_ch = source_area_map.get(ch_key, {}).get("areas", [])
-            
-            if ai_scorer:
-                results = await ai_check_all_areas(areas_for_ch, msg.text, ai_scorer, cfg.ai_threshold)
-            else:
-                results = check_all_areas(areas_for_ch, msg.text)
-
-            if not results:
-                console.print(f"  [dim]Skipped message from @{display_name} (no match)[/dim]")
-                return
-
-            for result in results:
-                match_count += 1
-                url = build_message_url(ch_key, msg.id)
-                ts = msg.date.replace(tzinfo=None) if msg.date else None
-                print_match(
-                    area_name=result.area.name,
-                    channel=display_name,
-                    message_id=msg.id,
-                    text=msg.text,
-                    score=result.score,
-                    matched_keywords=result.matched_keywords,
-                    url=url,
-                    timestamp=ts,
-                    ai_reason=result.ai_reason,
-                )
-                if notifier:
-                    await notifier.notify_match(
-                        area_name=result.area.name,
-                        channel_title=display_name,
-                        text=msg.text,
-                        score=result.score,
-                        url=url,
-                        ai_reason=result.ai_reason,
-                    )
-                if not no_save:
-                    save_match(
-                        db_path=db_path,
-                        area=result.area.name,
-                        channel=ch_key,
-                        message_id=msg.id,
-                        text=msg.text,
-                        url=url,
-                    )
-
-        await client.listen_live(channel_pairs, _async_on_message)
+    from telefeed.engine import TeleFeedEngine
+    engine = TeleFeedEngine(
+        client=client,
+        config=cfg,
+        areas=all_areas,
+        notifier=notifier,
+        ai_scorer=ai_scorer,
+    )
 
     try:
         if live:
-            asyncio.run(_run_live())
+            asyncio.run(engine.run_live(no_groups, no_save, backfill_days))
         else:
-            asyncio.run(_run_fetch())
+            asyncio.run(engine.run_fetch(limit, no_groups, no_save))
 
         if ai_scorer:
             print_info(ai_scorer.stats())

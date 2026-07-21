@@ -63,7 +63,8 @@ def _send_desktop_notification_sync(title: str, message: str, url: Optional[str]
 
 
 def _send_telegram_bot_sync(bot_token: str, chat_id: str, text: str) -> bool:
-    """Send a notification message via Telegram Bot API (synchronous)."""
+    """Send a notification message via Telegram Bot API (synchronous) with retries."""
+    import time
     if not bot_token or not chat_id:
         return False
 
@@ -75,19 +76,27 @@ def _send_telegram_bot_sync(bot_token: str, chat_id: str, text: str) -> bool:
         "disable_web_page_preview": True,
     }
 
-    try:
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
-    except Exception as exc:
-        print_warning(f"Telegram Bot notification failed: {exc}")
-        return False
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status == 200
+        except Exception as exc:
+            if attempt < max_retries - 1:
+                delay = 2 ** attempt
+                logger.debug(f"Telegram Bot notification failed (attempt {attempt+1}/{max_retries}): {exc}. Retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                print_warning(f"Telegram Bot notification failed after {max_retries} attempts: {exc}")
+                return False
+    return False
 
 
 class NotificationManager:
