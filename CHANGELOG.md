@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0](https://github.com/firo1919/telefeed/compare/v0.1.0...v0.2.0) (2026-07-21)
+
+
+### Features
+
+* add multi-provider AI scoring support (Gemini, OpenAI, Anthropic, Ollama, OpenRouter) ([cbfa446](https://github.com/firo1919/telefeed/commit/cbfa4462e9448079128310da100a3ea8c5baf60f))
+* added TeleFeedEngine class to centralize feed processing ([97c46ec](https://github.com/firo1919/telefeed/commit/97c46ec51f3b4b914115541b3eb576260da3bc31))
+* Append URL to desktop notification body for visibility ([c2cea52](https://github.com/firo1919/telefeed/commit/c2cea52df92647d7fb9c554e25fd6652518b7c24))
+* cache channel list to improve performance ([28aa020](https://github.com/firo1919/telefeed/commit/28aa0200bef7a21345000de22678ecd174acf8e6))
+* update TeleFeed service management for Windows and Linux ([e0ea323](https://github.com/firo1919/telefeed/commit/e0ea323aa7eb1f36f8ff417e132c2a79ff457edf))
+
+
+### Bug Fixes
+
+* ci workflow to include all-ai dependencies ([7a170c8](https://github.com/firo1919/telefeed/commit/7a170c87fb1234b0257107eea9a067f755cc5363))
+* test seen messages with new check_and_mark_seen function ([f9845fb](https://github.com/firo1919/telefeed/commit/f9845fbf96942aa9470b1d4011732f463bfc3764))
+
 ## 0.1.0 (2026-07-20)
 
 
