@@ -199,20 +199,26 @@ class TeleFeedClient:
             print_error("No valid channels to watch. Exiting live mode.")
             return
 
-        # Map entity ID → display name for the incoming message handler
-        channel_map: dict[int, str] = {
-            e.id: name for e, name in zip(resolved_entities, resolved_names)
-        }
+        # Map entity ID → display name for the incoming message handler.
+        # Telethon sometimes returns negative peer IDs (e.g. -1001234567890)
+        # while entity.id is stored as the bare positive integer (1234567890).
+        # We index both forms so lookups always succeed.
+        channel_map: dict[int, str] = {}
+        for e, name in zip(resolved_entities, resolved_names):
+            channel_map[e.id] = name
+            channel_map[-e.id] = name                      # negative peer form
+            channel_map[-(e.id + 1_000_000_000_000)] = name  # supergroup form
 
         @self._client.on(events.NewMessage(chats=resolved_entities))
         async def _handler(event: events.NewMessage.Event) -> None:
             msg: Message = event.message
             if not msg.text:
                 return
-            ch_name = channel_map.get(event.chat_id, str(event.chat_id))
+            ch_name = channel_map.get(event.chat_id) or channel_map.get(abs(event.chat_id), str(event.chat_id))
             result = on_message(ch_name, msg)
             if __import__("inspect").isawaitable(result):
                 await result
+
 
         print_info(
             f"Watching [bold]{len(resolved_entities)}[/bold] channel(s) in real-time. "

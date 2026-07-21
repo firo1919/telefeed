@@ -22,7 +22,7 @@ import yaml
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from telefeed import __app_name__, __version__
-from telefeed.ai_filter import AIScorer, ai_check_all_areas
+from telefeed.ai_filter import build_scorer, ai_check_all_areas, BaseScorer
 from telefeed.client import ChannelInfo, TeleFeedClient, build_message_url
 from telefeed.config import (
     CONFIG_TEMPLATE,
@@ -134,12 +134,14 @@ def doctor(config: Optional[str]) -> None:
     else:
         print_error("Telegram API credentials missing in config.yaml.")
 
-    # Check Gemini API key if AI matcher is active
     if cfg.matcher == "ai":
-        if cfg.gemini.api_key:
-            print_success("Gemini API key present.")
+        if cfg.ai.api_key:
+            print_success(f"AI provider: [bold]{cfg.ai.provider}[/bold] / model: [bold]{cfg.ai.model}[/bold]")
         else:
-            print_warning("Gemini API key is missing (required for matcher: ai).")
+            if cfg.ai.provider == "ollama":
+                print_success("Ollama (local) configured — no API key required.")
+            else:
+                print_warning(f"AI provider '{cfg.ai.provider}' API key is missing in config.yaml.")
 
     # Notification checks
     print_section("Notification Drivers")
@@ -247,12 +249,17 @@ def fetch(
     if no_ai:
         matcher = "keywords"
 
-    ai_scorer = None
+    ai_scorer: BaseScorer | None = None
     if matcher == "ai":
         try:
-            ai_scorer = AIScorer.from_env(key=cfg.gemini.api_key)
-            print_info(f"Using AI matching (Gemini) — threshold: {cfg.ai_threshold}")
-        except ValueError as e:
+            ai_scorer = build_scorer(
+                provider=cfg.ai.provider,
+                model=cfg.ai.model,
+                api_key=cfg.ai.api_key,
+                base_url=cfg.ai.base_url,
+            )
+            print_info(f"Using AI matching ({cfg.ai.provider} / {cfg.ai.model}) — threshold: {cfg.ai_threshold}")
+        except (ValueError, ImportError) as e:
             print_error(str(e))
             raise SystemExit(1)
     else:
