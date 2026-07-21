@@ -52,23 +52,17 @@ def init_db(db_path: str) -> None:
         )
 
 
-def is_seen(db_path: str, channel: str, message_id: int) -> bool:
-    """Return True if this (channel, message_id) has already been processed."""
+def check_and_mark_seen(db_path: str, channel: str, message_id: int) -> bool:
+    """
+    Attempt to insert the message into seen_messages.
+    Returns True if it was already seen, False if it is newly inserted.
+    """
     with _conn(db_path) as con:
-        row = con.execute(
-            "SELECT 1 FROM seen_messages WHERE channel=? AND message_id=?",
-            (channel, message_id),
-        ).fetchone()
-    return row is not None
-
-
-def mark_seen(db_path: str, channel: str, message_id: int) -> None:
-    """Mark a message as seen so it won't be processed again."""
-    with _conn(db_path) as con:
-        con.execute(
+        cur = con.execute(
             "INSERT OR IGNORE INTO seen_messages (channel, message_id) VALUES (?, ?)",
             (channel, message_id),
         )
+        return cur.rowcount == 0  # 0 means ignored (already seen)
 
 
 def save_match(

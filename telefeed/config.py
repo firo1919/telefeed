@@ -17,14 +17,19 @@ from typing import Any, Optional
 import yaml
 
 
-XDG_CONFIG_HOME = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
-XDG_STATE_HOME = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+import platformdirs
 
-DEFAULT_CONFIG_DIR = XDG_CONFIG_HOME / "telefeed"
+XDG_CONFIG_HOME = Path(os.getenv("XDG_CONFIG_HOME", platformdirs.user_config_dir("telefeed")))
+XDG_STATE_HOME = Path(os.getenv("XDG_STATE_HOME", platformdirs.user_state_dir("telefeed")))
+XDG_CACHE_HOME = Path(os.getenv("XDG_CACHE_HOME", platformdirs.user_cache_dir("telefeed")))
+
+DEFAULT_CONFIG_DIR = XDG_CONFIG_HOME
 DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
 
-DEFAULT_STATE_DIR = XDG_STATE_HOME / "telefeed"
+DEFAULT_STATE_DIR = XDG_STATE_HOME
 DEFAULT_DB_PATH = DEFAULT_STATE_DIR / "telefeed.db"
+
+DEFAULT_CACHE_DIR = XDG_CACHE_HOME
 DEFAULT_SESSION_FILE = DEFAULT_CONFIG_DIR / "telefeed.session"
 
 
@@ -36,8 +41,11 @@ class TelegramConfig:
 
 
 @dataclass
-class GeminiConfig:
+class AIConfig:
+    provider: str = "gemini"  # gemini | openai | anthropic | ollama | openrouter
+    model: str = "gemini-2.5-flash"
     api_key: str = ""
+    base_url: str = ""  # Optional: override endpoint (e.g. Ollama's local URL)
 
 
 @dataclass
@@ -58,7 +66,7 @@ class TeleFeedConfig:
     matcher: str = "keywords"
     ai_threshold: int = 65
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
-    gemini: GeminiConfig = field(default_factory=GeminiConfig)
+    ai: AIConfig = field(default_factory=AIConfig)
     notifications: NotificationConfig = field(default_factory=NotificationConfig)
     areas: list[dict[str, Any]] = field(default_factory=list)
 
@@ -131,12 +139,26 @@ def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
     api_hash = str(tg_raw.get("api_hash") or os.getenv("TELEGRAM_API_HASH") or "")
     phone = str(tg_raw.get("phone") or os.getenv("TELEGRAM_PHONE") or "")
 
-    gemini_raw = data.get("gemini", {})
-    gemini_key = str(gemini_raw.get("api_key") or os.getenv("GEMINI_API_KEY") or "")
+    # New unified ai: section; fall back to legacy gemini: section for compatibility
+    ai_raw = data.get("ai") or data.get("gemini", {})
+    ai_provider = str(ai_raw.get("provider", "gemini")).lower().strip()
+    ai_model = str(ai_raw.get("model", "")).strip()
+    ai_key = str(ai_raw.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or "")
+    ai_base_url = str(ai_raw.get("base_url", "")).strip()
+
+    # Provide sensible default models per provider if not specified
+    if not ai_model:
+        ai_model = {
+            "gemini": "gemini-2.5-flash",
+            "openai": "gpt-4o-mini",
+            "anthropic": "claude-3-5-haiku-20241022",
+            "ollama": "llama3.2",
+            "openrouter": "meta-llama/llama-3.1-8b-instruct",
+        }.get(ai_provider, "gemini-2.5-flash")
 
     notif_raw = data.get("notifications", {})
     desktop_enabled = bool(notif_raw.get("desktop", True))
-    
+
     bot_raw = notif_raw.get("telegram_bot", {})
     bot_enabled = bool(bot_raw.get("enabled", False))
     bot_token = str(bot_raw.get("bot_token", ""))
@@ -145,7 +167,7 @@ def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
     matcher = str(data.get("matcher", "keywords")).lower().strip()
     if matcher not in ("keywords", "ai"):
         matcher = "keywords"
-    
+
     threshold = int(data.get("ai_threshold", 65))
     threshold = max(0, min(100, threshold))
 
@@ -153,7 +175,7 @@ def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
         matcher=matcher,
         ai_threshold=threshold,
         telegram=TelegramConfig(api_id=api_id, api_hash=api_hash, phone=phone),
-        gemini=GeminiConfig(api_key=gemini_key),
+        ai=AIConfig(provider=ai_provider, model=ai_model, api_key=ai_key, base_url=ai_base_url),
         notifications=NotificationConfig(
             desktop=desktop_enabled,
             telegram_bot=TelegramBotNotifyConfig(
@@ -180,8 +202,13 @@ telegram:
   api_hash: "YOUR_TELEGRAM_API_HASH"
   phone: "+YOUR_PHONE_NUMBER"
 
-gemini:
-  api_key: "YOUR_GEMINI_API_KEY"
+# AI provider configuration
+# Supported providers: gemini | openai | anthropic | ollama | openrouter
+ai:
+  provider: gemini
+  model: gemini-2.5-flash     # Leave blank to auto-select default model per provider
+  api_key: "YOUR_API_KEY"     # Not needed for Ollama (local)
+  base_url: ""                # Override endpoint e.g. http://localhost:11434/v1 for Ollama
 
 notifications:
   desktop: true          # Send OS desktop popup notifications

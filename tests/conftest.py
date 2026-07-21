@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import pytest
 
-from telefeed.config import TeleFeedConfig, TelegramConfig, GeminiConfig, NotificationConfig, TelegramBotNotifyConfig
+from telefeed.config import TeleFeedConfig, TelegramConfig, AIConfig, NotificationConfig, TelegramBotNotifyConfig
 from telefeed.filters import Area
 
 
@@ -29,6 +29,12 @@ telegram:
   api_hash: "test_api_hash"
   phone: "+15551234567"
 
+ai:
+  provider: gemini
+  model: gemini-2.5-flash
+  api_key: "test_gemini_key"
+
+# Legacy section kept for backward compatibility testing
 gemini:
   api_key: "test_gemini_key"
 
@@ -71,7 +77,7 @@ def sample_telefeed_config(sample_config_yaml: Path, tmp_path: Path) -> TeleFeed
         matcher="ai",
         ai_threshold=70,
         telegram=TelegramConfig(api_id=11111111, api_hash="test_api_hash", phone="+15551234567"),
-        gemini=GeminiConfig(api_key="test_gemini_key"),
+        ai=AIConfig(provider="gemini", model="gemini-2.5-flash", api_key="test_gemini_key"),
         notifications=NotificationConfig(
             desktop=True,
             telegram_bot=TelegramBotNotifyConfig(enabled=True, bot_token="123456:test", chat_id="987654321"),

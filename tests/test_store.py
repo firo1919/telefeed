@@ -8,8 +8,7 @@ import pytest
 from telefeed.store import (
     get_matches,
     init_db,
-    is_seen,
-    mark_seen,
+    check_and_mark_seen,
     save_match,
     update_match_status,
 )
@@ -32,13 +31,11 @@ def test_seen_messages(db_path: str):
     channel = "remote_jobs"
     msg_id = 101
 
-    assert is_seen(db_path, channel, msg_id) is False
-    mark_seen(db_path, channel, msg_id)
-    assert is_seen(db_path, channel, msg_id) is True
-
-    # Duplicate mark_seen should be ignored without error
-    mark_seen(db_path, channel, msg_id)
-    assert is_seen(db_path, channel, msg_id) is True
+    # First time we see it, it inserts successfully and returns False
+    assert check_and_mark_seen(db_path, channel, msg_id) is False
+    
+    # Second time, it's already in the DB, so it returns True
+    assert check_and_mark_seen(db_path, channel, msg_id) is True
 
 
 def test_save_and_get_matches(db_path: str):
