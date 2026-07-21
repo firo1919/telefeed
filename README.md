@@ -21,28 +21,8 @@ Stop manually searching channels. Define your interests once — TeleFeed watche
 
 ### 1. Installation
 
-**Recommended — pipx (Arch Linux / standalone install):**
-
-```bash
-pipx install git+https://github.com/firo1919/telefeed.git
-```
-
-For AI matching, inject the provider SDK you want to use:
-
-```bash
-pipx inject telefeed openai      # OpenAI, Ollama, or OpenRouter
-pipx inject telefeed anthropic   # Anthropic Claude
-```
-
-**Standard pip:**
-
 ```bash
 pip install git+https://github.com/firo1919/telefeed.git
-
-# With optional AI provider dependencies
-pip install "telefeed[openai]"      # OpenAI / Ollama / OpenRouter
-pip install "telefeed[anthropic]"   # Anthropic Claude
-pip install "telefeed[all-ai]"      # All providers
 ```
 
 **Local editable install (development):**
@@ -51,12 +31,7 @@ pip install "telefeed[all-ai]"      # All providers
 git clone https://github.com/firo1919/telefeed.git
 cd telefeed
 pipx install -e .
-pipx inject telefeed openai   # add extras as needed
 ```
-
-> **Note:** On Arch Linux, use `pipx` instead of `pip` to avoid the externally-managed-environment restriction.
-
----
 
 ### 2. Initialize Configuration
 
@@ -95,20 +70,6 @@ notifications:
         bot_token: ""
         chat_id: ""
 ```
-
-#### Provider quick reference
-
-| Provider         | `provider`   | `model` example                     | Extra needed |
-| :--------------- | :----------- | :---------------------------------- | :----------- |
-| Google Gemini    | `gemini`     | `gemini-2.5-flash`                  | _(bundled)_  |
-| OpenAI           | `openai`     | `gpt-4o-mini`                       | `openai`     |
-| Anthropic Claude | `anthropic`  | `claude-3-5-haiku-20241022`         | `anthropic`  |
-| Ollama (local)   | `ollama`     | `llama3.2`, `qwen2.5:1.5b-instruct` | `openai`     |
-| OpenRouter       | `openrouter` | `meta-llama/llama-3.1-8b-instruct`  | `openai`     |
-
-> **Legacy config**: configs using the old `gemini: api_key:` section still work without changes.
-
----
 
 ### 4. Authenticate
 
@@ -170,8 +131,6 @@ telefeed service restart
 # Uninstall service
 telefeed service uninstall
 ```
-
-> After installing new provider extras (e.g. `pipx inject telefeed openai`), restart the service with `telefeed service restart`.
 
 ---
 
