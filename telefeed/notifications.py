@@ -28,26 +28,28 @@ def _send_desktop_notification_sync(title: str, message: str, url: Optional[str]
     """Send a native OS desktop notification (synchronous)."""
     system = platform.system().lower()
 
+    # Append the URL to the body so it's always visible in the popup
+    body = message
+    if url:
+        body = f"{message}\n{url}"
+
     try:
         if system == "linux":
-            # Check for notify-send executable
             if shutil.which("notify-send"):
-                cmd = ["notify-send", "-a", "TeleFeed", "-u", "normal", title, message]
+                cmd = ["notify-send", "-a", "TeleFeed", "-u", "normal", title, body]
                 subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 return True
         elif system == "darwin":
-            # macOS osascript
-            script = f'display notification "{message}" with title "{title}"'
+            script = f'display notification "{body}" with title "{title}"'
             subprocess.run(["osascript", "-e", script], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True
         elif system == "windows":
-            # PowerShell Toast
             ps_script = f"""
             [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
             $template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
             $textNodes = $template.GetElementsByTagName("text")
             $textNodes.Item(0).AppendChild($template.CreateTextNode("{title}")) | Out-Null
-            $textNodes.Item(1).AppendChild($template.CreateTextNode("{message}")) | Out-Null
+            $textNodes.Item(1).AppendChild($template.CreateTextNode("{body}")) | Out-Null
             $toast = [Windows.UI.Notifications.ToastNotification]::$new($template)
             [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("TeleFeed").Show($toast)
             """
@@ -55,8 +57,9 @@ def _send_desktop_notification_sync(title: str, message: str, url: Optional[str]
             return True
     except Exception as exc:
         logger.debug(f"Desktop notification failed: {exc}")
-    
+
     return False
+
 
 
 def _send_telegram_bot_sync(bot_token: str, chat_id: str, text: str) -> bool:
