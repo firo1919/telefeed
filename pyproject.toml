@@ -13,6 +13,7 @@ dependencies = [
     "rich>=13.7.0",
     "click>=8.1.7",
     "google-genai>=0.1.1",
+    "platformdirs>=4.0.0",
 ]
 
 [project.optional-dependencies]
