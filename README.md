@@ -9,7 +9,7 @@ Stop manually searching channels. Define your interests once — TeleFeed watche
 
 - 🎯 **Areas of Concern**: Group keywords, negative keywords, and semantic intent into named topic areas.
 - ⚡ **Auto-Discovery**: Automatically scans all broadcast channels and supergroups you subscribe to on Telegram.
-- 🤖 **AI Matching (Gemini)**: Optional smart semantic matching using Google Gemini 2.5 Flash (`--smart` or `matcher: ai`).
+- 🤖 **Multi-Provider AI Matching**: Optional smart semantic matching powered by your choice of AI provider — Gemini, OpenAI, Anthropic Claude, local Ollama models, or OpenRouter.
 - 🖥️ **Desktop OS Notifications**: Native popup alerts on Linux, macOS, and Windows when relevant posts match.
 - 💬 **Telegram Bot Push Alerts**: Direct notifications forwarded to your Telegram user chat via a Telegram bot.
 - ⚙️ **Background Systemd Service**: Easily install and run as an automated `systemd` user daemon.
@@ -21,49 +21,94 @@ Stop manually searching channels. Define your interests once — TeleFeed watche
 
 ### 1. Installation
 
+**Recommended — pipx (Arch Linux / standalone install):**
+
+```bash
+pipx install git+https://github.com/firo1919/telefeed.git
+```
+
+For AI matching, inject the provider SDK you want to use:
+
+```bash
+pipx inject telefeed openai      # OpenAI, Ollama, or OpenRouter
+pipx inject telefeed anthropic   # Anthropic Claude
+```
+
+**Standard pip:**
+
 ```bash
 pip install git+https://github.com/firo1919/telefeed.git
+
+# With optional AI provider dependencies
+pip install "telefeed[openai]"      # OpenAI / Ollama / OpenRouter
+pip install "telefeed[anthropic]"   # Anthropic Claude
+pip install "telefeed[all-ai]"      # All providers
 ```
 
-Or install locally in editable mode:
+**Local editable install (development):**
 
 ```bash
-pip install -e .
+git clone https://github.com/firo1919/telefeed.git
+cd telefeed
+pipx install -e .
+pipx inject telefeed openai   # add extras as needed
 ```
 
-### 2. Initialize Configuration
+> **Note:** On Arch Linux, use `pipx` instead of `pip` to avoid the externally-managed-environment restriction.
 
-Initialize your configuration file:
+---
+
+### 2. Initialize Configuration
 
 ```bash
 telefeed init
 ```
 
-This creates `~/.config/telefeed/config.yaml`
+This creates `~/.config/telefeed/config.yaml`.
 
-### 3. Add Telegram and AI Provider Credentials
+---
 
-Edit `~/.config/telefeed/config.yaml`
+### 3. Configure Credentials & AI Provider
+
+Edit `~/.config/telefeed/config.yaml`:
 
 ```yaml
-matcher: ai
-ai_threshold: 65
+matcher: ai # 'keywords' or 'ai'
+ai_threshold: 65 # relevance threshold 0-100
 
 telegram:
-  api_id: 12345678
-  api_hash: "your_api_hash_here"
-  phone: "+1234567890"
+    api_id: 12345678
+    api_hash: "your_api_hash_here"
+    phone: "+1234567890"
 
-gemini:
-  api_key: "your_gemini_api_key_here"
+# AI provider — pick one:
+ai:
+    provider: gemini # gemini | openai | anthropic | ollama | openrouter
+    model: gemini-2.5-flash # leave blank to use the default model for the provider
+    api_key: "your_api_key_here" # not required for Ollama
+    base_url: "" # override endpoint, e.g. http://localhost:11434/v1 for Ollama
 
 notifications:
-  desktop: true
-  telegram_bot:
-    enabled: false
-    bot_token: ""
-    chat_id: ""
+    desktop: true
+    telegram_bot:
+        enabled: false
+        bot_token: ""
+        chat_id: ""
 ```
+
+#### Provider quick reference
+
+| Provider         | `provider`   | `model` example                     | Extra needed |
+| :--------------- | :----------- | :---------------------------------- | :----------- |
+| Google Gemini    | `gemini`     | `gemini-2.5-flash`                  | _(bundled)_  |
+| OpenAI           | `openai`     | `gpt-4o-mini`                       | `openai`     |
+| Anthropic Claude | `anthropic`  | `claude-3-5-haiku-20241022`         | `anthropic`  |
+| Ollama (local)   | `ollama`     | `llama3.2`, `qwen2.5:1.5b-instruct` | `openai`     |
+| OpenRouter       | `openrouter` | `meta-llama/llama-3.1-8b-instruct`  | `openai`     |
+
+> **Legacy config**: configs using the old `gemini: api_key:` section still work without changes.
+
+---
 
 ### 4. Authenticate
 
@@ -71,9 +116,11 @@ notifications:
 telefeed auth
 ```
 
-Enter your Telegram OTP code when prompted. The session is saved to `~/.config/telefeed/telefeed.session`.
+Enter your Telegram OTP when prompted. The session is saved to `~/.config/telefeed/telefeed.session`.
 
-### 5. Validate setup with `doctor`
+---
+
+### 5. Validate setup
 
 ```bash
 telefeed doctor
@@ -89,6 +136,9 @@ telefeed fetch
 
 # Watch in real-time with notifications enabled
 telefeed fetch --live --notify
+
+# Use keyword matching only (skip AI)
+telefeed fetch --no-ai
 
 # Restrict to a single area
 telefeed fetch --area "Remote Dev Jobs"
@@ -121,24 +171,42 @@ telefeed service restart
 telefeed service uninstall
 ```
 
+> After installing new provider extras (e.g. `pipx inject telefeed openai`), restart the service with `telefeed service restart`.
+
 ---
 
 ## Project Structure
 
 ```
 telefeed/
-├── config.yaml           # Default configuration template
 ├── pyproject.toml
 └── telefeed/
     ├── __init__.py
-    ├── __main__.py       # python -m telefeed
+    ├── __main__.py       # python -m telefeed entry point
     ├── cli.py            # Click CLI commands & service actions
     ├── client.py         # Telethon MTProto wrapper
     ├── config.py         # XDG path resolver & YAML config loader
     ├── display.py        # Rich terminal UI rendering
     ├── filters.py        # Pure keyword matching engine
-    ├── ai_filter.py      # Gemini 2.5 Flash semantic scoring
+    ├── ai_filter.py      # Multi-provider AI scorer (Gemini, OpenAI, Anthropic, Ollama)
     ├── notifications.py  # OS desktop notifications & Telegram Bot API push
     ├── service.py        # Systemd user service installer & manager
     └── store.py          # SQLite persistence layer
+```
+
+---
+
+## Development
+
+```bash
+git clone https://github.com/firo1919/telefeed.git
+cd telefeed
+
+# Create a venv for dev tools (tests, linting) — separate from the pipx install
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[test]"
+
+# Run tests
+pytest tests/ -v
 ```
