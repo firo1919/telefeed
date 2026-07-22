@@ -42,6 +42,8 @@ def init_db(db_path: str) -> None:
                 message_id  INTEGER NOT NULL,
                 text        TEXT NOT NULL,
                 url         TEXT,
+                score       REAL,
+                ai_reason   TEXT,
                 matched_at  TEXT NOT NULL,
                 status      TEXT NOT NULL DEFAULT 'new'
             );
@@ -50,6 +52,17 @@ def init_db(db_path: str) -> None:
                 ON matches (channel, message_id, area);
             """
         )
+        
+        # Add new columns if missing (for existing installations)
+        try:
+            con.execute("ALTER TABLE matches ADD COLUMN score REAL")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        
+        try:
+            con.execute("ALTER TABLE matches ADD COLUMN ai_reason TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
 
 def check_and_mark_seen(db_path: str, channel: str, message_id: int) -> bool:
@@ -72,16 +85,18 @@ def save_match(
     message_id: int,
     text: str,
     url: Optional[str] = None,
+    score: Optional[float] = None,
+    ai_reason: Optional[str] = None,
 ) -> None:
     """Persist a matched message."""
     with _conn(db_path) as con:
         con.execute(
             """
             INSERT OR IGNORE INTO matches
-                (area, channel, message_id, text, url, matched_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'new')
+                (area, channel, message_id, text, url, score, ai_reason, matched_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new')
             """,
-            (area, channel, message_id, text, url, datetime.now(timezone.utc).isoformat()),
+            (area, channel, message_id, text, url, score, ai_reason, datetime.now(timezone.utc).isoformat()),
         )
 
 

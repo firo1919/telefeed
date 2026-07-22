@@ -14,6 +14,9 @@ dependencies = [
     "click>=8.1.7",
     "google-genai>=0.1.1",
     "platformdirs>=4.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "websockets>=12.0",
 ]
 
 [project.optional-dependencies]
@@ -35,3 +38,6 @@ asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning:google.genai.*",
 ]
+
+[tool.setuptools.package-data]
+"telefeed" = ["web/static/**/*"]

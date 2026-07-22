@@ -359,6 +359,31 @@ def service_logs_cmd() -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Web Interface
+# ──────────────────────────────────────────────────────────────────────────────
+
+@cli.command("web")
+@click.option("--port", default=8000, help="Port to run the backend API server on.")
+def web_cmd(port: int) -> None:
+    """Launch the FastAPI backend server for the web interface."""
+    import uvicorn
+    import webbrowser
+    
+    print_info(f"Starting TeleFeed Web UI on http://127.0.0.1:{port}")
+    
+    # Open the browser automatically
+    webbrowser.open(f"http://127.0.0.1:{port}")
+    
+    uvicorn.run(
+        "telefeed.web.server:app",
+        host="127.0.0.1",
+        port=port,
+        reload=False,
+        log_level="info",
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────────────────────────────────────
 

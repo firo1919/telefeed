@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release-please:
@@ -24,11 +25,24 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - name: Build Web UI
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
       - name: Set up Python
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.11"
 
       - name: Install build tools
         if: ${{ steps.release.outputs.release_created }}
@@ -47,3 +61,7 @@ jobs:
         with:
           tag_name: ${{ steps.release.outputs.tag_name }}
           files: dist/*
+
+      - name: Publish package distributions to PyPI
+        if: ${{ steps.release.outputs.release_created }}
+        uses: pypa/gh-action-pypi-publish@release/v1

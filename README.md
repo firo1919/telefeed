@@ -12,8 +12,9 @@ Stop manually searching channels. Define your interests once — TeleFeed watche
 - 🤖 **Multi-Provider AI Matching**: Optional smart semantic matching powered by your choice of AI provider — Gemini, OpenAI, Anthropic Claude, local Ollama models, or OpenRouter.
 - 🖥️ **Desktop OS Notifications**: Native popup alerts on Linux, macOS, and Windows when relevant posts match.
 - 💬 **Telegram Bot Push Alerts**: Direct notifications forwarded to your Telegram user chat via a Telegram bot.
-- ⚙️ **Background Systemd Service**: Easily install and run as an automated `systemd` user daemon.
-- 📦 **Single Config File**: Zero `.env` files — all credentials, notification rules, and topic filters live in `config.yaml`.
+- ⚙️ **Background Service**: Easily install and run as an automated user daemon.
+- 🌐 **Modern Web Dashboard**: Configure everything, authenticate, and view your live feed in a beautiful web interface.
+- 📦 **Single Config File**: all credentials, notification rules, and topic filters live in `config.yaml`.
 
 ---
 
@@ -21,9 +22,13 @@ Stop manually searching channels. Define your interests once — TeleFeed watche
 
 ### 1. Installation
 
+The easiest way to install TeleFeed and its dependencies securely is via `pipx`:
+
 ```bash
-pip install git+https://github.com/firo1919/telefeed.git
+pipx install telefeed
 ```
+
+_Alternatively, you can install via standard pip: `pip install telefeed`_
 
 **Local editable install (development):**
 
@@ -43,41 +48,23 @@ This creates `~/.config/telefeed/config.yaml`.
 
 ---
 
-### 3. Configure Credentials & AI Provider
+### 3. Start the Web Dashboard & Setup
 
-Edit `~/.config/telefeed/config.yaml`:
-
-```yaml
-matcher: ai # 'keywords' or 'ai'
-ai_threshold: 65 # relevance threshold 0-100
-
-telegram:
-    api_id: 12345678
-    api_hash: "your_api_hash_here"
-    phone: "+1234567890"
-
-# AI provider — pick one:
-ai:
-    provider: gemini # gemini | openai | anthropic | ollama | openrouter
-    model: gemini-2.5-flash # leave blank to use the default model for the provider
-    api_key: "your_api_key_here" # not required for Ollama
-    base_url: "" # override endpoint, e.g. http://localhost:11434/v1 for Ollama
-
-notifications:
-    desktop: true
-    telegram_bot:
-        enabled: false
-        bot_token: ""
-        chat_id: ""
-```
-
-### 4. Authenticate
+You can configure everything, authenticate with Telegram, and view your feed directly from the Web UI:
 
 ```bash
-telefeed auth
+telefeed web
 ```
 
-Enter your Telegram OTP when prompted. The session is saved to `~/.config/telefeed/telefeed.session`.
+Open `http://127.0.0.1:8000` in your browser. From here, you can:
+
+- Enter your Telegram API credentials and log in securely.
+- Setup your AI Provider (Gemini, OpenAI, Anthropic, Ollama).
+- Add the specific "Areas" (topics/keywords) you want to track.
+- Enable desktop or Telegram Bot push notifications.
+- Start the background service.
+
+_Note: You can also configure everything manually by editing `~/.config/telefeed/config.yaml` and running `telefeed auth` in your terminal._
 
 ---
 
@@ -92,7 +79,10 @@ telefeed doctor
 ## CLI Usage
 
 ```bash
-# Pull recent messages and print matches
+# Launch the interactive web dashboard (Recommended)
+telefeed web
+
+# Pull recent messages and print matches to terminal
 telefeed fetch
 
 # Watch in real-time with notifications enabled
@@ -110,9 +100,9 @@ telefeed show-matches
 
 ---
 
-## Running in Background (`systemd`) on Linux
+## Running in Background on Linux & Windows
 
-TeleFeed includes built-in commands to manage a background `systemd` user service:
+TeleFeed includes built-in commands to manage a background service (`systemd` on Linux, Startup VBScript on Windows):
 
 ```bash
 # Install and enable background service (runs `telefeed fetch --live --notify`)
@@ -139,33 +129,17 @@ telefeed service uninstall
 ```
 telefeed/
 ├── pyproject.toml
+├── ui/                   # Vue/Vite frontend source code (HTML/CSS/JS)
 └── telefeed/
-    ├── __init__.py
     ├── __main__.py       # python -m telefeed entry point
     ├── cli.py            # Click CLI commands & service actions
     ├── client.py         # Telethon MTProto wrapper
     ├── config.py         # XDG path resolver & YAML config loader
-    ├── display.py        # Rich terminal UI rendering
-    ├── filters.py        # Pure keyword matching engine
+    ├── engine.py         # Live feed processing engine
     ├── ai_filter.py      # Multi-provider AI scorer (Gemini, OpenAI, Anthropic, Ollama)
     ├── notifications.py  # OS desktop notifications & Telegram Bot API push
-    ├── service.py        # Systemd user service installer & manager
-    └── store.py          # SQLite persistence layer
-```
-
----
-
-## Development
-
-```bash
-git clone https://github.com/firo1919/telefeed.git
-cd telefeed
-
-# Create a venv for dev tools (tests, linting) — separate from the pipx install
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[test]"
-
-# Run tests
-pytest tests/ -v
+    ├── service.py        # Systemd/Windows service installer & manager
+    ├── store.py          # SQLite persistence layer
+    └── web/              # FastAPI backend
+        └── server.py     # Web endpoints, WebSockets, and static file serving
 ```
