@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/firo1919/telefeed/compare/v0.2.0...v0.3.0) (2026-07-22)
+
+
+### Features
+
+* Add FastAPI backend for TeleFeed Web UI with config, auth, and live feed support ([93fbaf0](https://github.com/firo1919/telefeed/commit/93fbaf0f89bf650e23625dd0eac8097a80006eac))
+* added build and publish steps for web UI and Python package ([6234c1c](https://github.com/firo1919/telefeed/commit/6234c1c5e1c90ed632ddddf2b33459052519d28a))
+* web interface with FastAPI backend and Vite frontend ([fae7f5c](https://github.com/firo1919/telefeed/commit/fae7f5c1ea751f4cfd712c7e3c1bffdb467e421e))
+
 ## [0.2.0](https://github.com/firo1919/telefeed/compare/v0.1.0...v0.2.0) (2026-07-21)
 
 
