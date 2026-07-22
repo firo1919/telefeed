@@ -1,116 +1,199 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #3b82f6;
-  --color-dark-bg: #0b1120;
-  --color-glass: rgba(15, 23, 42, 0.6);
-  --color-glass-border: rgba(255, 255, 255, 0.08);
-  --color-light-bg: #f8fafc;
-  --color-light-glass: rgba(255, 255, 255, 0.85);
-  --color-light-glass-border: rgba(0, 0, 0, 0.08);
+    --color-primary: #3b82f6;
+    --color-dark-bg: #0b1120;
+    --color-glass: rgba(15, 23, 42, 0.6);
+    --color-glass-border: rgba(255, 255, 255, 0.08);
+    --color-light-bg: #f8fafc;
+    --color-light-glass: rgba(255, 255, 255, 0.85);
+    --color-light-glass-border: rgba(0, 0, 0, 0.08);
 }
 
 /* ─── Dark Mode (default) ─── */
 body {
-  @apply bg-[var(--color-dark-bg)] text-slate-200 font-sans antialiased min-h-screen selection:bg-blue-500/30;
-  background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 400px),
-                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.04), transparent 400px);
-  transition: background-color 0.3s, color 0.3s;
+    @apply bg-dark-bg text-slate-200 font-sans antialiased min-h-screen selection:bg-blue-500/30;
+    background-image:
+        radial-gradient(
+            circle at top right,
+            rgba(59, 130, 246, 0.08),
+            transparent 400px
+        ),
+        radial-gradient(
+            circle at bottom left,
+            rgba(16, 185, 129, 0.04),
+            transparent 400px
+        );
+    transition:
+        background-color 0.3s,
+        color 0.3s;
 }
 
 .glass-panel {
-  @apply bg-[var(--color-glass)] backdrop-blur-xl border border-[var(--color-glass-border)] rounded-2xl shadow-xl shadow-black/20;
-  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+    @apply bg-glass backdrop-blur-xl border border-glass-border rounded-2xl shadow-xl shadow-black/20;
+    transition:
+        background-color 0.3s,
+        border-color 0.3s,
+        box-shadow 0.3s;
 }
 
 .input-field {
-  @apply w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all;
+    @apply w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all;
 }
 
 .label-text {
-  @apply block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5;
+    @apply block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5;
 }
 
 .nav-btn.active {
-  @apply text-blue-400 bg-blue-500/10 border-l-2 border-blue-500 rounded-l-none;
+    @apply text-blue-400 bg-blue-500/10 border-l-2 border-blue-500 rounded-l-none;
 }
 
 .badge {
-  @apply px-2 py-0.5 rounded text-xs border;
+    @apply px-2 py-0.5 rounded text-xs border;
 }
 
-.badge-blue   { @apply bg-blue-500/20 text-blue-300 border-blue-500/30; }
-.badge-red    { @apply bg-red-500/20 text-red-300 border-red-500/30; }
-.badge-green  { @apply bg-emerald-500/20 text-emerald-300 border-emerald-500/30; }
-.badge-gray   { @apply bg-slate-700/50 text-slate-300 border-slate-600; }
+.badge-blue {
+    @apply bg-blue-500/20 text-blue-300 border-blue-500/30;
+}
+.badge-red {
+    @apply bg-red-500/20 text-red-300 border-red-500/30;
+}
+.badge-green {
+    @apply bg-emerald-500/20 text-emerald-300 border-emerald-500/30;
+}
+.badge-gray {
+    @apply bg-slate-700/50 text-slate-300 border-slate-600;
+}
 
-.btn-primary  { @apply px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors; }
-.btn-danger   { @apply px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm font-medium border border-red-500/30 transition-colors; }
-.btn-success  { @apply px-4 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors; }
-.btn-ghost    { @apply px-4 py-2 bg-slate-700/50 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium border border-slate-600 transition-colors; }
+.btn-primary {
+    @apply px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors;
+}
+.btn-danger {
+    @apply px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm font-medium border border-red-500/30 transition-colors;
+}
+.btn-success {
+    @apply px-4 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors;
+}
+.btn-ghost {
+    @apply px-4 py-2 bg-slate-700/50 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium border border-slate-600 transition-colors;
+}
 
 .btn-icon {
-  @apply p-2 rounded-lg hover:bg-slate-700/50 transition-colors text-slate-400 hover:text-slate-200;
+    @apply p-2 rounded-lg hover:bg-slate-700/50 transition-colors text-slate-400 hover:text-slate-200;
 }
 
 /* ─── Light Mode ─── */
 body.light {
-  @apply bg-[var(--color-light-bg)] text-slate-800;
-  background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent 400px),
-                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.03), transparent 400px);
+    @apply bg-light-bg text-slate-800;
+    background-image:
+        radial-gradient(
+            circle at top right,
+            rgba(59, 130, 246, 0.05),
+            transparent 400px
+        ),
+        radial-gradient(
+            circle at bottom left,
+            rgba(16, 185, 129, 0.03),
+            transparent 400px
+        );
 }
 
 body.light .glass-panel {
-  @apply bg-[var(--color-light-glass)] border-[var(--color-light-glass-border)] shadow-lg shadow-black/5;
+    @apply bg-light-glass border-light-glass-border shadow-lg shadow-black/5;
 }
 
 body.light .input-field {
-  @apply bg-white border-slate-300 text-slate-800 placeholder-slate-400 focus:ring-blue-400/50 focus:border-blue-400/50;
+    @apply bg-white border-slate-300 text-slate-800 placeholder-slate-400 focus:ring-blue-400/50 focus:border-blue-400/50;
 }
 
-body.light .label-text { @apply text-slate-500; }
+body.light .label-text {
+    @apply text-slate-500;
+}
 
-body.light .nav-btn { @apply text-slate-600 hover:text-slate-900; }
-body.light .nav-btn.active { @apply text-blue-600 bg-blue-50 border-blue-500; }
+body.light .nav-btn {
+    @apply text-slate-600 hover:text-slate-900;
+}
+body.light .nav-btn.active {
+    @apply text-blue-600 bg-blue-50 border-blue-500;
+}
 
-body.light .badge-gray { @apply bg-slate-200 text-slate-700 border-slate-300; }
-body.light .badge-blue { @apply bg-blue-100 text-blue-700 border-blue-300; }
-body.light .badge-red { @apply bg-red-100 text-red-700 border-red-300; }
-body.light .badge-green { @apply bg-emerald-100 text-emerald-700 border-emerald-300; }
+body.light .badge-gray {
+    @apply bg-slate-200 text-slate-700 border-slate-300;
+}
+body.light .badge-blue {
+    @apply bg-blue-100 text-blue-700 border-blue-300;
+}
+body.light .badge-red {
+    @apply bg-red-100 text-red-700 border-red-300;
+}
+body.light .badge-green {
+    @apply bg-emerald-100 text-emerald-700 border-emerald-300;
+}
 
-body.light .btn-ghost { @apply bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300; }
-body.light .btn-icon  { @apply hover:bg-slate-200 text-slate-500 hover:text-slate-700; }
+body.light .btn-ghost {
+    @apply bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300;
+}
+body.light .btn-icon {
+    @apply hover:bg-slate-200 text-slate-500 hover:text-slate-700;
+}
 
-body.light #logs-container { @apply bg-slate-100 text-slate-700; }
+body.light #logs-container {
+    @apply bg-slate-100 text-slate-700;
+}
 
 /* ─── Light Mode Overrides for JS rendering ─── */
-body.light .text-slate-400 { color: var(--color-slate-600, #475569); }
-body.light .text-slate-300 { color: var(--color-slate-700, #334155); }
-body.light .text-slate-600 { color: var(--color-slate-500, #64748b); }
-body.light .bg-slate-900\/40 { background-color: var(--color-slate-100, #f1f5f9); }
-body.light .bg-slate-900\/80 { background-color: var(--color-slate-200, #e2e8f0); }
-body.light .border-slate-800\/50 { border-color: var(--color-slate-200, #e2e8f0); }
-body.light .border-slate-800 { border-color: var(--color-slate-300, #cbd5e1); }
-body.light .bg-slate-800 { background-color: var(--color-slate-200, #e2e8f0); }
+body.light .text-slate-400 {
+    color: var(--color-slate-600, #475569);
+}
+body.light .text-slate-300 {
+    color: var(--color-slate-700, #334155);
+}
+body.light .text-slate-600 {
+    color: var(--color-slate-500, #64748b);
+}
+body.light .bg-slate-900\/40 {
+    background-color: var(--color-slate-100, #f1f5f9);
+}
+body.light .bg-slate-900\/80 {
+    background-color: var(--color-slate-200, #e2e8f0);
+}
+body.light .border-slate-800\/50 {
+    border-color: var(--color-slate-200, #e2e8f0);
+}
+body.light .border-slate-800 {
+    border-color: var(--color-slate-300, #cbd5e1);
+}
+body.light .bg-slate-800 {
+    background-color: var(--color-slate-200, #e2e8f0);
+}
 
 /* ─── Modal Overlay ─── */
 .modal-overlay {
-  @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200;
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200;
 }
 .modal-overlay.open {
-  @apply opacity-100 pointer-events-auto;
+    @apply opacity-100 pointer-events-auto;
 }
 
 /* ─── Skeleton ─── */
 .skeleton {
-  @apply animate-pulse bg-slate-700/40 rounded;
+    @apply animate-pulse bg-slate-700/40 rounded;
 }
 body.light .skeleton {
-  @apply bg-slate-200;
+    @apply bg-slate-200;
 }
 
 /* ─── Scrollbar ─── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply bg-slate-600 rounded-full; }
-body.light ::-webkit-scrollbar-thumb { @apply bg-slate-300; }
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    @apply bg-slate-600 rounded-full;
+}
+body.light ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300;
+}
