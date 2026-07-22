@@ -2,191 +2,297 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TeleFeed - Dashboard</title>
+    <meta name="description" content="TeleFeed — AI-powered Telegram feed aggregator dashboard." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
+    <title>TeleFeed — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>body { font-family: 'Inter', system-ui, sans-serif; }</style>
   </head>
   <body class="p-4 md:p-8">
-    <div id="app" class="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
-      
-      <!-- Sidebar / Navigation -->
-      <aside class="w-full md:w-64 flex-shrink-0 space-y-6">
-        <div class="glass-panel p-6 relative overflow-hidden group">
-          <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 drop-shadow-sm">TeleFeed</h1>
-          <p class="text-sm text-slate-400 mt-1">AI Telegram Aggregator</p>
-          
-          <div class="mt-6 pt-6 border-t border-slate-700/50">
-            <h3 class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Service Status</h3>
-            <div id="service-status-box" class="flex items-center justify-between p-3 bg-slate-900/80 rounded-lg border border-slate-800 transition-colors">
-               <span class="flex items-center gap-2 text-sm font-medium text-slate-300">
-                 <span id="service-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                 <span id="service-label">Stopped</span>
+    <div id="app" class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+
+      <!-- ═══ Sidebar ═══ -->
+      <aside class="w-full md:w-64 flex-shrink-0 space-y-4">
+        <!-- Brand -->
+        <div class="glass-panel p-5 relative overflow-hidden group">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <div class="flex justify-between items-start">
+            <div>
+              <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-blue-400 to-emerald-400">TeleFeed</h1>
+              <p class="text-xs text-slate-400 mt-0.5">AI Telegram Aggregator</p>
+            </div>
+            <button id="btn-theme" class="btn-icon" title="Toggle theme">
+              <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+              <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </button>
+          </div>
+
+          <!-- Service Status -->
+          <div class="mt-4 pt-4 border-t border-slate-700/50">
+            <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-2">Service</h3>
+            <div id="service-status-box" class="flex items-center justify-between p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 transition-colors">
+               <span class="flex items-center gap-2 text-sm font-medium">
+                 <span id="service-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-500 transition-colors"></span>
+                 <span id="service-label" class="text-slate-400">Checking...</span>
                </span>
                <button id="btn-toggle-service" class="text-xs px-3 py-1.5 bg-blue-600/90 hover:bg-blue-500 text-white rounded transition-colors font-medium cursor-pointer">Start</button>
             </div>
           </div>
         </div>
 
-        <nav class="glass-panel p-2 flex flex-col gap-1">
-          <button data-view="feed" class="nav-btn active flex items-center gap-3 w-full p-3 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <!-- Navigation -->
+        <nav class="glass-panel p-1.5 flex flex-col gap-0.5">
+          <button data-view="feed" class="nav-btn active flex items-center gap-3 w-full p-2.5 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             Live Feed
           </button>
-          <button data-view="areas" class="nav-btn flex items-center gap-3 w-full p-3 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
+          <button data-view="areas" class="nav-btn flex items-center gap-3 w-full p-2.5 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-            Areas of Concern
+            Areas
           </button>
-          <button data-view="settings" class="nav-btn flex items-center gap-3 w-full p-3 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
+          <button data-view="settings" class="nav-btn flex items-center gap-3 w-full p-2.5 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             Settings
           </button>
-          <button data-view="system" class="nav-btn flex items-center gap-3 w-full p-3 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
+          <button data-view="system" class="nav-btn flex items-center gap-3 w-full p-2.5 rounded-lg text-left text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            System Tools
+            System
           </button>
         </nav>
       </aside>
-      
-      <!-- Main Content Area -->
+
+      <!-- ═══ Main Content ═══ -->
       <main class="flex-1 min-w-0">
-        
-        <!-- Live Feed View -->
+
+        <!-- ── Live Feed ── -->
         <section id="view-feed" class="view-section">
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-2xl font-bold text-slate-100">Live Matches</h2>
-            <span id="ws-status" class="text-xs font-mono text-slate-500 uppercase tracking-wider flex items-center gap-2">
-               <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Connecting...
-            </span>
-          </div>
-          <div id="feed-container" class="space-y-4">
-            <!-- Matches -->
-            <div id="feed-placeholder" class="glass-panel p-12 text-center text-slate-500 italic">
-              No matches found. Starting your feed or adding areas of concern will populate this feed.
+          <div class="flex flex-wrap justify-between items-end mb-5 gap-4">
+            <h2 class="text-2xl font-bold">Live Matches</h2>
+            <div class="flex items-center gap-3">
+              <!-- Filter bar -->
+              <select id="filter-area" class="input-field w-40 py-1.5 text-xs"><option value="">All Areas</option></select>
+              <select id="filter-status" class="input-field w-32 py-1.5 text-xs">
+                <option value="">All Status</option>
+                <option value="new">New</option>
+                <option value="saved">Saved</option>
+                <option value="archived">Archived</option>
+              </select>
+              <span id="ws-status" class="text-xs font-mono text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Connecting...
+              </span>
             </div>
+          </div>
+          <div id="feed-container" class="space-y-3">
+            <div id="feed-placeholder" class="glass-panel p-10 text-center text-slate-500 italic text-sm">
+              No matches found yet. Configure your areas and start the service to begin.
+            </div>
+          </div>
+          <div class="mt-4 flex justify-center">
+            <button id="btn-load-more" class="btn-ghost text-xs hidden">Load More</button>
           </div>
         </section>
 
-        <!-- Areas View -->
+        <!-- ── Areas ── -->
         <section id="view-areas" class="view-section hidden">
-          <div class="flex justify-between items-end mb-6">
+          <div class="flex justify-between items-end mb-5">
             <div>
-              <h2 class="text-2xl font-bold text-slate-100">Areas of Concern</h2>
-              <p class="text-sm text-slate-400 mt-1">Topics and keywords you want the AI to find for you.</p>
+              <h2 class="text-2xl font-bold">Areas of Concern</h2>
+              <p class="text-sm text-slate-400 mt-1">Topics the AI monitors for you across all your channels.</p>
             </div>
-            <button id="btn-add-area" class="px-4 py-2 bg-emerald-600/90 hover:bg-emerald-500 transition-colors rounded-lg font-medium text-sm text-white shadow-lg shadow-emerald-900/20 flex items-center gap-2">
+            <button id="btn-add-area" class="btn-success flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
               Add Area
             </button>
           </div>
-          <div id="areas-container" class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            <!-- Areas injected here -->
+          <div id="areas-container" class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <!-- Area cards injected here -->
           </div>
         </section>
 
-        <!-- Settings View -->
+        <!-- ── Settings ── -->
         <section id="view-settings" class="view-section hidden">
-          <h2 class="text-2xl font-bold text-slate-100 mb-6">Configuration Settings</h2>
-          
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- Telegram Config -->
-            <div class="glass-panel p-6">
-              <h3 class="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <h2 class="text-2xl font-bold mb-5">Settings</h2>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Matching Engine -->
+            <div class="glass-panel p-5">
+              <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Matching Engine
+              </h3>
+              <div class="space-y-3">
+                <div>
+                  <label class="label-text">Mode</label>
+                  <select id="cfg-matcher" class="input-field">
+                    <option value="keywords">Keywords Only</option>
+                    <option value="ai">AI Scoring</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label-text">AI Threshold (0–100)</label>
+                  <div class="flex items-center gap-3">
+                    <input type="range" id="cfg-threshold" min="0" max="100" value="65" class="flex-1 accent-blue-500" />
+                    <span id="cfg-threshold-val" class="text-sm font-mono font-bold text-blue-400 w-8 text-right">65</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Telegram Client -->
+            <div class="glass-panel p-5">
+              <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 Telegram Client
               </h3>
-              <div class="space-y-4">
-                <div>
-                  <label class="label-text">API ID</label>
-                  <input type="text" id="cfg-api-id" class="input-field" placeholder="1234567" />
+              <div class="space-y-3">
+                <div><label class="label-text">API ID</label><input type="text" id="cfg-api-id" class="input-field" placeholder="1234567" /></div>
+                <div><label class="label-text">API Hash</label><input type="password" id="cfg-api-hash" class="input-field" placeholder="abcd1234..." /></div>
+                <div><label class="label-text">Phone</label><input type="text" id="cfg-phone" class="input-field" placeholder="+1234567890" /></div>
+              </div>
+              <!-- Auth Wizard -->
+              <div class="mt-4 pt-4 border-t border-slate-700/50">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authentication</span>
+                  <span id="auth-status-badge" class="text-[10px] px-2 py-0.5 rounded-full border border-slate-700 text-slate-500">Checking...</span>
                 </div>
-                <div>
-                  <label class="label-text">API Hash</label>
-                  <input type="password" id="cfg-api-hash" class="input-field" placeholder="abcd1234abcd1234..." />
+                <div id="auth-status-msg" class="text-xs text-slate-400 mb-2"></div>
+                
+                <!-- Step 1: Send Code -->
+                <div id="auth-step-send" class="hidden">
+                  <button id="btn-auth-send" class="btn-primary text-xs w-full">Send Login Code</button>
                 </div>
-                <div>
-                  <label class="label-text">Phone Number</label>
-                  <input type="text" id="cfg-phone" class="input-field" placeholder="+1234567890" />
+                
+                <!-- Step 2: Enter Code -->
+                <div id="auth-step-code" class="hidden space-y-2">
+                  <p class="text-xs text-emerald-400">Code sent! Check your Telegram app.</p>
+                  <div class="flex gap-2">
+                    <input type="text" id="auth-code-input" class="input-field text-xs flex-1" placeholder="Enter code" maxlength="6" />
+                    <button id="btn-auth-verify" class="btn-primary text-xs">Verify</button>
+                  </div>
+                </div>
+                
+                <!-- Step 3: 2FA -->
+                <div id="auth-step-2fa" class="hidden space-y-2">
+                  <p class="text-xs text-amber-400">Two-factor authentication required.</p>
+                  <div class="flex gap-2">
+                    <input type="password" id="auth-2fa-input" class="input-field text-xs flex-1" placeholder="2FA password" />
+                    <button id="btn-auth-2fa" class="btn-primary text-xs">Submit</button>
+                  </div>
+                </div>
+                
+                <!-- Authenticated -->
+                <div id="auth-step-done" class="hidden">
+                  <div class="flex items-center gap-2 text-xs text-emerald-400">
+                    <span class="text-base">✓</span>
+                    <span>Logged in as <strong id="auth-user-name"></strong></span>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- AI Config -->
-            <div class="glass-panel p-6">
-              <h3 class="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <div class="glass-panel p-5">
+              <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
                 <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                 AI Scoring Engine
               </h3>
-              <div class="space-y-4">
-                <div>
-                  <label class="label-text">Provider</label>
+              <div class="space-y-3">
+                <div><label class="label-text">Provider</label>
                   <select id="cfg-ai-provider" class="input-field">
-                    <option value="gemini">Google Gemini (Built-in)</option>
+                    <option value="gemini">Google Gemini</option>
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic</option>
                     <option value="ollama">Ollama (Local)</option>
                     <option value="openrouter">OpenRouter</option>
                   </select>
                 </div>
-                <div>
-                  <label class="label-text">Model</label>
-                  <input type="text" id="cfg-ai-model" class="input-field" placeholder="gemini-2.5-flash" />
-                </div>
-                <div>
-                  <label class="label-text">API Key</label>
-                  <input type="password" id="cfg-ai-key" class="input-field" placeholder="sk-..." />
-                </div>
-                <div>
-                  <label class="label-text">Base URL (Optional)</label>
-                  <input type="text" id="cfg-ai-base-url" class="input-field" placeholder="http://localhost:11434/v1" />
-                </div>
+                <div><label class="label-text">Model</label><input type="text" id="cfg-ai-model" class="input-field" placeholder="gemini-2.5-flash" /></div>
+                <div><label class="label-text">API Key</label><input type="password" id="cfg-ai-key" class="input-field" placeholder="sk-..." /></div>
+                <div><label class="label-text">Base URL (optional)</label><input type="text" id="cfg-ai-base-url" class="input-field" placeholder="http://localhost:11434/v1" /></div>
               </div>
             </div>
 
-            <div class="lg:col-span-2 flex justify-end">
-              <button id="btn-save-settings" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 transition-colors rounded-lg font-medium text-sm text-white shadow-lg shadow-blue-900/20">
-                Save Configuration
-              </button>
+            <!-- Notifications -->
+            <div class="glass-panel p-5">
+              <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                Notifications
+              </h3>
+              <div class="space-y-3">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="cfg-desktop" class="w-4 h-4 accent-blue-500 rounded" />
+                  <span class="text-sm">Desktop OS notifications</span>
+                </label>
+                <hr class="border-slate-700/50" />
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="cfg-bot-enabled" class="w-4 h-4 accent-blue-500 rounded" />
+                  <span class="text-sm">Telegram Bot push alerts</span>
+                </label>
+                <div><label class="label-text">Bot Token</label><input type="password" id="cfg-bot-token" class="input-field" placeholder="123456:ABC-DEF..." /></div>
+                <div><label class="label-text">Chat ID</label><input type="text" id="cfg-bot-chatid" class="input-field" placeholder="5163478004" /></div>
+              </div>
+              <button id="btn-test-notif" class="mt-3 text-xs text-blue-400 hover:text-blue-300 transition-colors">🔔 Send Test Notification</button>
             </div>
 
+            <div class="lg:col-span-2 flex justify-end">
+              <button id="btn-save-settings" class="btn-primary shadow-lg shadow-blue-900/20">Save Configuration</button>
+            </div>
           </div>
         </section>
 
-        <!-- System Tools View -->
+        <!-- ── System Tools ── -->
         <section id="view-system" class="view-section hidden">
-          <h2 class="text-2xl font-bold text-slate-100 mb-6">System Tools</h2>
-          
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <h2 class="text-2xl font-bold mb-5">System Tools</h2>
+
+          <!-- Diagnostics -->
+          <div class="glass-panel p-5 mb-5">
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="text-lg font-semibold">Diagnostics</h3>
+              <button id="btn-run-doctor" class="btn-ghost text-xs">Run Check</button>
+            </div>
+            <div id="doctor-container" class="space-y-1.5">
+              <span class="text-sm text-slate-500 italic">Click "Run Check" to diagnose your setup.</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
             <!-- Service Management -->
-            <div class="glass-panel p-6">
-              <h3 class="text-lg font-semibold text-slate-200 mb-2">Background Service</h3>
-              <p class="text-sm text-slate-400 mb-4">Install or completely remove the background system daemon.</p>
-              <div class="flex gap-3">
-                <button id="btn-svc-install" class="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg text-sm font-medium border border-blue-500/30 transition-colors">Install Service</button>
-                <button id="btn-svc-uninstall" class="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm font-medium border border-red-500/30 transition-colors">Uninstall</button>
-                <button id="btn-svc-restart" class="px-4 py-2 bg-slate-700/50 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium border border-slate-600 transition-colors">Restart</button>
+            <div class="glass-panel p-5">
+              <h3 class="text-base font-semibold mb-1.5">Background Service</h3>
+              <p class="text-xs text-slate-400 mb-3">Install, remove, or restart the background daemon.</p>
+              <div class="flex flex-wrap gap-2">
+                <button id="btn-svc-install" class="btn-primary text-xs">Install</button>
+                <button id="btn-svc-uninstall" class="btn-danger text-xs">Uninstall</button>
+                <button id="btn-svc-restart" class="btn-ghost text-xs">Restart</button>
               </div>
             </div>
 
             <!-- Manual Fetch -->
-            <div class="glass-panel p-6">
-              <h3 class="text-lg font-semibold text-slate-200 mb-2">Manual Backfill</h3>
-              <p class="text-sm text-slate-400 mb-4">Trigger a one-off historical fetch for missed messages.</p>
+            <div class="glass-panel p-5">
+              <h3 class="text-base font-semibold mb-1.5">Manual Backfill</h3>
+              <p class="text-xs text-slate-400 mb-3">Fetch historical messages from your subscribed channels.</p>
               <div class="flex items-center gap-3">
-                <input type="number" id="fetch-limit" value="50" class="input-field w-24" title="Number of messages per channel to check" />
-                <button id="btn-fetch" class="px-4 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-900/20 transition-colors">Run Fetch</button>
+                <input type="number" id="fetch-limit" value="50" class="input-field w-24 text-xs" title="Message limit per channel" />
+                <button id="btn-fetch" class="btn-success text-xs">Run Fetch</button>
               </div>
             </div>
           </div>
 
           <!-- Logs -->
-          <div class="glass-panel p-0 overflow-hidden flex flex-col h-[500px]">
-            <div class="px-4 py-3 bg-slate-900/80 border-b border-slate-800 flex justify-between items-center">
-              <h3 class="text-sm font-semibold text-slate-300">Service Logs</h3>
-              <button id="btn-refresh-logs" class="text-xs text-blue-400 hover:text-blue-300">Refresh</button>
+          <div class="glass-panel p-0 overflow-hidden flex flex-col h-[420px]">
+            <div class="px-4 py-2.5 bg-slate-900/80 border-b border-slate-800 flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Service Logs</h3>
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400">
+                  <input type="checkbox" id="log-auto-refresh" class="w-3 h-3 accent-blue-500 rounded" />
+                  Auto-refresh
+                </label>
+                <button id="btn-refresh-logs" class="text-xs text-blue-400 hover:text-blue-300">Refresh</button>
+              </div>
             </div>
-            <div id="logs-container" class="p-4 bg-black/50 flex-1 overflow-y-auto font-mono text-xs text-slate-300 space-y-1">
+            <div id="logs-container" class="p-3 bg-black/50 flex-1 overflow-y-auto font-mono text-[11px] text-slate-300 space-y-0.5 leading-relaxed">
                <span class="text-slate-500 italic">Click refresh to load logs...</span>
             </div>
           </div>
@@ -194,9 +300,43 @@
 
       </main>
     </div>
-    
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50"></div>
+
+    <!-- ═══ Area Modal ═══ -->
+    <div id="area-modal" class="modal-overlay">
+      <div class="glass-panel p-6 w-full max-w-lg mx-4 transform scale-95 transition-transform duration-200">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="area-modal-title" class="text-lg font-bold">New Area</h3>
+          <button id="btn-close-modal" class="btn-icon">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <div><label class="label-text">Name</label><input type="text" id="area-name" class="input-field" placeholder="e.g. Remote Python Jobs" /></div>
+          <div><label class="label-text">Description (AI guidance)</label><textarea id="area-desc" class="input-field h-20 resize-none" placeholder="What should the AI look for?"></textarea></div>
+          <div><label class="label-text">Keywords <span class="normal-case text-slate-500">(comma separated)</span></label><input type="text" id="area-kw" class="input-field" placeholder="python, remote, hiring" /></div>
+          <div><label class="label-text">Negative Keywords <span class="normal-case text-slate-500">(comma separated)</span></label><input type="text" id="area-neg-kw" class="input-field" placeholder="internship, unpaid" /></div>
+          <div><label class="label-text">Sources <span class="normal-case text-slate-500">(comma separated channel @handles, leave blank for all)</span></label><input type="text" id="area-sources" class="input-field" placeholder="@python_jobs, @remote_ok" /></div>
+        </div>
+        <div class="mt-5 flex justify-end gap-3">
+          <button id="btn-cancel-area" class="btn-ghost">Cancel</button>
+          <button id="btn-save-area" class="btn-primary">Save Area</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Confirm Modal ═══ -->
+    <div id="confirm-modal" class="modal-overlay">
+      <div class="glass-panel p-6 w-full max-w-sm mx-4 text-center">
+        <p id="confirm-msg" class="text-sm mb-5">Are you sure?</p>
+        <div class="flex justify-center gap-3">
+          <button id="btn-confirm-no" class="btn-ghost">Cancel</button>
+          <button id="btn-confirm-yes" class="btn-danger">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-2 z-50"></div>
 
     <script type="module" src="/src/main.js"></script>
   </body>
