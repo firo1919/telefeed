@@ -3,6 +3,8 @@
 **A personalized Telegram feed aggregator.**
 Stop manually searching channels. Define your interests once — TeleFeed watches for you in the background and notifies you of key updates.
 
+<img width="1366" height="650" alt="dashboard-tele" src="https://github.com/user-attachments/assets/f5f9c79c-169c-4878-a831-bb69fa3610e0" />
+
 ---
 
 ## Features
