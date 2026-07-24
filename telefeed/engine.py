@@ -104,9 +104,9 @@ class TeleFeedEngine:
             return False
 
         if self.ai_scorer:
-            results = await ai_check_all_areas(areas_for_channel, msg.text, self.ai_scorer, self.config.ai_threshold)
+            results = await ai_check_all_areas(areas_for_channel, msg.text, self.ai_scorer, self.config.threshold)
         else:
-            results = check_all_areas(areas_for_channel, msg.text)
+            results = check_all_areas(areas_for_channel, msg.text, threshold=self.config.threshold)
 
         if not results:
             return False
@@ -202,25 +202,16 @@ class TeleFeedEngine:
 
         print_section(
             f"Backfilling {len(self.source_area_map)} channel(s) "
-            f"(channels: {backfill_days}d history | groups: unread only)"
+            f"(history: {backfill_days}d)"
         )
 
         for channel_key, info in self.source_area_map.items():
             entity = info["entity"]
             title = info["title"]
-            is_broadcast = info.get("is_broadcast", False)
-            unread = info.get("unread_count", 0)
 
             channel_arg = entity if entity is not None else channel_key
-
-            if is_broadcast:
-                fetch_kwargs = dict(limit=None, min_date=backfill_cutoff)
-                scope_label = f"{backfill_days}d history"
-            elif unread > 0:
-                fetch_kwargs = dict(limit=min(unread, 500))
-                scope_label = f"{unread} unread"
-            else:
-                continue
+            fetch_kwargs = dict(limit=None, min_date=backfill_cutoff)
+            scope_label = f"{backfill_days}d history"
 
             msg_count = 0
             async for msg in self.client.fetch_messages(channel_arg, **fetch_kwargs):

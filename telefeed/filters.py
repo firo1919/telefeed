@@ -1,20 +1,44 @@
 """
-Keyword-based filtering engine.
+Keyword & BM25 Relevance Filtering Engine.
 
 Each "Area" has:
   - keywords          : list of strings; any match is a candidate
   - negative_keywords : list of strings; any match disqualifies the message
-  - description       : plain-text intent description (used for scoring)
+  - description       : plain-text intent description (scored via Okapi BM25)
 
 Scoring:
-  A simple relevance score is computed as the number of keyword hits
-  divided by the total keyword count.  This gives a [0.0, 1.0] score
-  that can later be replaced by a proper embedding/LLM call.
+  A hybrid score is computed combining exact keyword match ratio and
+  Okapi BM25 relevance scoring based on the Area description.
 """
 
 import re
 from dataclasses import dataclass, field
 from typing import Optional
+
+from rank_bm25 import BM25Okapi, BM25Plus
+
+# Standard English stop words to ignore when parsing Area descriptions
+STOP_WORDS = {
+    "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't",
+    "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by",
+    "can", "could", "did", "do", "does", "doing", "down", "during", "each", "few", "for", "from",
+    "further", "had", "has", "have", "having", "he", "her", "here", "hers", "herself", "him", "himself",
+    "his", "how", "i", "if", "in", "into", "is", "it", "its", "itself", "just", "me", "more", "most",
+    "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "our",
+    "ours", "ourselves", "out", "over", "own", "same", "she", "should", "so", "some", "such", "than",
+    "that", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this",
+    "those", "through", "to", "too", "under", "until", "up", "very", "was", "we", "were", "what",
+    "when", "where", "which", "while", "who", "whom", "why", "with", "would", "you", "your", "yours",
+    "yourself", "yourselves", "looking", "want", "need", "find", "search", "track", "get"
+}
+
+
+def extract_description_tokens(description: str) -> list[str]:
+    """Extract clean non-stopword tokens from an area description."""
+    if not description:
+        return []
+    tokens = re.findall(r'\b[a-zA-Z0-9_-]{2,}\b', description.lower())
+    return [t for t in tokens if t not in STOP_WORDS]
 
 
 @dataclass
@@ -25,9 +49,10 @@ class Area:
     negative_keywords: list[str] = field(default_factory=list)
     sources: list[str] = field(default_factory=list)
 
-    # Pre-compiled patterns built on first use
+    # Pre-compiled patterns and tokens built on initialization
     _kw_patterns: list[re.Pattern] = field(default_factory=list, repr=False)
     _neg_patterns: list[re.Pattern] = field(default_factory=list, repr=False)
+    _desc_tokens: list[str] = field(default_factory=list, repr=False)
 
     def __post_init__(self) -> None:
         self._kw_patterns = [
@@ -36,6 +61,7 @@ class Area:
         self._neg_patterns = [
             re.compile(re.escape(kw), re.IGNORECASE) for kw in self.negative_keywords
         ]
+        self._desc_tokens = extract_description_tokens(self.description)
 
 
 @dataclass
@@ -56,15 +82,63 @@ def _normalize(text: str) -> str:
     return " ".join(text.split())
 
 
-def check_area(area: Area, text: str) -> MatchResult:
+def compute_bm25_score(
+    area: Area,
+    text: str,
+) -> tuple[float, list[str]]:
     """
-    Run keyword and negative-keyword checks against *text* for a single *area*.
+    Calculate Okapi BM25 relevance score for a message against an Area's description & keywords
+    using the rank-bm25 package.
 
-    Returns a MatchResult.  Call .is_match to know if it passed.
+    Returns:
+        (score: float 0.0-1.0, matched_desc_tokens: list[str])
+    """
+    doc_tokens = re.findall(r'\b[a-zA-Z0-9_-]+\b', text.lower())
+    if not doc_tokens:
+        return 0.0, []
+
+    # Query terms = keywords (weighted 2x) + description tokens
+    query_terms: list[str] = []
+    for kw in area.keywords:
+        kw_clean = kw.lower().strip()
+        query_terms.extend([kw_clean, kw_clean])
+
+    query_terms.extend(area._desc_tokens)
+
+    if not query_terms:
+        return 0.0, []
+
+    # Initialize BM25 model with document tokens as corpus
+    bm25 = BM25Plus([doc_tokens])
+    scores = bm25.get_scores(query_terms)
+    raw_score = float(scores[0])
+
+    doc_set = set(doc_tokens)
+    matched_desc_tokens = [
+        dt for dt in area._desc_tokens
+        if dt in doc_set or any(dt in d or d in dt for d in doc_set)
+    ]
+
+    max_bm25 = BM25Plus([query_terms])
+    max_score = float(max_bm25.get_scores(query_terms)[0])
+
+    norm_score = round(min(1.0, raw_score / max_score), 3) if max_score > 0 else 0.0
+    return norm_score, matched_desc_tokens
+
+
+def check_area(area: Area, text: str, threshold: int = 65) -> MatchResult:
+    """
+    Run keyword pre-filtering, BM25 relevance scoring, and threshold checks against *text* for a single *area*.
+
+    Pipeline:
+      1. Negative keyword gate — hard discard if hit.
+      2. Positive keyword pre-filter — if area has keywords, at least one positive keyword MUST match.
+      3. BM25 & keyword density relevance scoring (0.0 - 1.0).
+      4. Threshold check — score (converted to 0-100) must be >= threshold.
     """
     normalized = _normalize(text)
 
-    # --- Negative keyword gate (fast path) ---
+    # 1. Negative keyword gate
     for pat in area._neg_patterns:
         m = pat.search(normalized)
         if m:
@@ -75,24 +149,44 @@ def check_area(area: Area, text: str) -> MatchResult:
                 blocked_by=m.group(0),
             )
 
-    # --- Keyword hits ---
+    # 2. Positive keyword pre-filter (hard requirement if area has keywords)
     hits: list[str] = []
-    for kw, pat in zip(area.keywords, area._kw_patterns):
-        if pat.search(normalized):
-            hits.append(kw)
+    if area.keywords:
+        for kw, pat in zip(area.keywords, area._kw_patterns):
+            if pat.search(normalized):
+                hits.append(kw)
+        if not hits:
+            # Keywords defined, but none matched -> hard discard
+            return MatchResult(area=area, score=0.0, matched_keywords=[])
 
-    score = len(hits) / len(area.keywords) if area.keywords else 0.0
+    # 3. BM25 & Keyword Relevance Scoring
+    bm25_score, desc_hits = compute_bm25_score(area, text)
 
-    return MatchResult(area=area, score=score, matched_keywords=hits)
+    if area.keywords:
+        kw_ratio = len(hits) / len(area.keywords)
+        raw_score = max(kw_ratio, bm25_score)
+        matched = hits + [f"desc:{dh}" for dh in desc_hits]
+    else:
+        raw_score = bm25_score
+        matched = [f"desc:{dh}" for dh in desc_hits]
+
+    score = round(raw_score, 3)
+    score_pct = int(score * 100)
+
+    # 4. Enforce top-level threshold (0-100)
+    if score_pct < threshold:
+        return MatchResult(area=area, score=0.0, matched_keywords=[])
+
+    return MatchResult(area=area, score=score, matched_keywords=matched)
 
 
-def check_all_areas(areas: list[Area], text: str) -> list[MatchResult]:
+def check_all_areas(areas: list[Area], text: str, threshold: int = 65) -> list[MatchResult]:
     """
-    Run every area against *text*.  Returns only the MatchResults that pass.
+    Run every area against *text*. Returns only the MatchResults that pass.
     """
     results: list[MatchResult] = []
     for area in areas:
-        result = check_area(area, text)
+        result = check_area(area, text, threshold=threshold)
         if result.is_match:
             results.append(result)
     return results
@@ -136,14 +230,14 @@ def load_matcher_config(config: dict) -> tuple[str, int]:
     Read top-level matcher settings from the config dict.
 
     Returns:
-        (matcher, ai_threshold)
+        (matcher, threshold)
 
-        matcher      : 'keywords' or 'ai'
-        ai_threshold : int 0-100 (minimum AI score to count as a match)
+        matcher   : 'keywords' or 'ai'
+        threshold : int 0-100 (minimum relevance threshold for both modes)
     """
     matcher = str(config.get("matcher", "keywords")).lower().strip()
     if matcher not in ("keywords", "ai"):
         matcher = "keywords"
-    threshold = int(config.get("ai_threshold", 65))
+    threshold = int(config.get("threshold", config.get("ai_threshold", 65)))
     threshold = max(0, min(100, threshold))
     return matcher, threshold

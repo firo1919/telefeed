@@ -218,8 +218,8 @@
                                 id="filter-status"
                                 class="input-field w-32 py-1.5 text-xs"
                             >
+                                <option value="new" selected>New</option>
                                 <option value="">All Status</option>
-                                <option value="new">New</option>
                                 <option value="saved">Saved</option>
                                 <option value="archived">Archived</option>
                             </select>
@@ -243,13 +243,25 @@
                             the service to begin.
                         </div>
                     </div>
-                    <div class="mt-4 flex justify-center">
-                        <button
-                            id="btn-load-more"
-                            class="btn-ghost text-xs hidden"
-                        >
-                            Load More
-                        </button>
+                    <div id="pagination-bar" class="mt-6 flex items-center justify-between pt-4 border-t border-slate-800/60">
+                        <span id="page-info" class="text-xs text-slate-400">Showing 0-0 of 0 matches</span>
+                        <div class="flex items-center gap-2">
+                            <button
+                                id="btn-prev-page"
+                                class="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1 disabled:opacity-40 cursor-pointer"
+                                disabled
+                            >
+                                ← Previous
+                            </button>
+                            <span id="page-number" class="text-xs font-mono px-2 text-slate-300">Page 1</span>
+                            <button
+                                id="btn-next-page"
+                                class="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1 disabled:opacity-40 cursor-pointer"
+                                disabled
+                            >
+                                Next →
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -330,7 +342,7 @@
                                 </div>
                                 <div>
                                     <label class="label-text"
-                                        >AI Threshold (0–100)</label
+                                        >Relevance Threshold (0–100%)</label
                                     >
                                     <div class="flex items-center gap-3">
                                         <input
