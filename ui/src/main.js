@@ -62,6 +62,11 @@ $$(".nav-btn").forEach((btn) => {
         Object.entries(views).forEach(([k, v]) =>
             v.classList.toggle("hidden", k !== target),
         );
+        if (target === "system") {
+            startLogPolling();
+        } else {
+            stopLogPolling();
+        }
     });
 });
 
@@ -884,17 +889,22 @@ $("#btn-fetch")?.addEventListener("click", async () => {
     }
 });
 
-// ── Logs ──
+// ── Logs (Auto-refreshed by default) ──
 async function loadLogs() {
     const container = $("#logs-container");
     if (!container) return;
     try {
         const data = await fetch("/api/service/logs").then((r) => r.json());
         if (data.logs?.length > 0) {
+            const isAtBottom =
+                container.scrollHeight - container.scrollTop <=
+                container.clientHeight + 50;
             container.innerHTML = data.logs
                 .map((l) => `<div>${esc(l)}</div>`)
                 .join("");
-            container.scrollTop = container.scrollHeight;
+            if (isAtBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
         } else {
             container.innerHTML =
                 '<span class="text-slate-500 italic">No logs found.</span>';
@@ -905,18 +915,19 @@ async function loadLogs() {
     }
 }
 
-$("#btn-refresh-logs")?.addEventListener("click", loadLogs);
+function startLogPolling() {
+    loadLogs();
+    if (!logAutoRefreshTimer) {
+        logAutoRefreshTimer = setInterval(loadLogs, 3000);
+    }
+}
 
-// Auto-refresh toggle
-$("#log-auto-refresh")?.addEventListener("change", (e) => {
-    if (e.target.checked) {
-        loadLogs();
-        logAutoRefreshTimer = setInterval(loadLogs, 5000);
-    } else {
+function stopLogPolling() {
+    if (logAutoRefreshTimer) {
         clearInterval(logAutoRefreshTimer);
         logAutoRefreshTimer = null;
     }
-});
+}
 
 // Load logs when switching to system tab
 $('[data-view="system"]')?.addEventListener("click", loadLogs);
