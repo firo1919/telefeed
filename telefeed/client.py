@@ -85,13 +85,13 @@ class TeleFeedClient:
         print_info(f"Sending OTP to [bold]{self.phone}[/bold] …")
         await self._client.send_code_request(self.phone)
 
-        code = console.input("[bold cyan]Enter the OTP code you received:[/bold cyan] ").strip()
+        code = console.input("[bold cyan]Enter the OTP code you received:[/bold cyan] ", password=True).strip()
 
         try:
             await self._client.sign_in(self.phone, code)
         except SessionPasswordNeededError:
             # 2FA is enabled
-            pw = console.input("[bold cyan]Two-factor auth password:[/bold cyan] ").strip()
+            pw = console.input("[bold cyan]Two-factor auth password:[/bold cyan] ", password=True).strip()
             await self._client.sign_in(password=pw)
 
         me = await self._client.get_me()
