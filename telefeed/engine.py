@@ -152,8 +152,14 @@ class TeleFeedEngine:
                 )
         return True
 
-    async def run_fetch(self, limit: int, no_groups: bool, no_save: bool) -> None:
-        """Fetch historical messages up to the limit and exit."""
+    async def run_fetch(
+        self,
+        limit: Optional[int] = None,
+        no_groups: bool = False,
+        no_save: bool = False,
+        backfill_days: Optional[int] = None,
+    ) -> None:
+        """Fetch historical messages (unlimited by default, bounded by backfill_days window) and exit."""
         await self.client.connect_and_auth()
         await self.build_source_map(no_groups)
 
@@ -161,7 +167,10 @@ class TeleFeedEngine:
             print_warning("No channels to watch. Subscribe to channels or add sources to config.yaml.")
             return
 
-        print_section(f"Scanning {len(self.source_area_map)} channel(s)")
+        days = backfill_days if backfill_days is not None else self.config.backfill_days
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days) if days > 0 else None
+
+        print_section(f"Scanning {len(self.source_area_map)} channel(s) ({days}d history)")
 
         for channel_key, info in self.source_area_map.items():
             entity = info["entity"]
@@ -171,7 +180,9 @@ class TeleFeedEngine:
             msg_count = 0
             channel_arg = entity if entity is not None else channel_key
 
-            async for msg in self.client.fetch_messages(channel_arg, limit=limit):
+            fetch_kwargs = dict(limit=limit, min_date=cutoff)
+
+            async for msg in self.client.fetch_messages(channel_arg, **fetch_kwargs):
                 self.total_checked += 1
                 msg_count += 1
                 await self._process_message(channel_key, title, msg, no_save)
@@ -183,7 +194,7 @@ class TeleFeedEngine:
         else:
             print_success(f"Found [bold]{self.match_count}[/bold] match(es) from {self.total_checked} message(s) checked.")
 
-    async def run_live(self, no_groups: bool, no_save: bool, backfill_days: int) -> None:
+    async def run_live(self, no_groups: bool = False, no_save: bool = False, backfill_days: Optional[int] = None) -> None:
         """Run a backfill of recent unread history, then watch live indefinitely."""
         await self.client.connect_and_auth()
         await self.build_source_map(no_groups)
@@ -195,8 +206,9 @@ class TeleFeedEngine:
         if self.notifier:
             await self.notifier.notify_startup(len(self.source_area_map), len(self.areas))
 
-        # 1. Backfill phase
-        backfill_cutoff = datetime.now(timezone.utc) - timedelta(days=backfill_days)
+        # 1. Backfill phase (unlimited messages within backfill_days window)
+        days = backfill_days if backfill_days is not None else self.config.backfill_days
+        backfill_cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         backfill_total = 0
         backfill_matches = 0
 

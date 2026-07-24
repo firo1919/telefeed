@@ -364,12 +364,13 @@ def service_logs_cmd() -> None:
 
 @cli.command("web")
 @click.option("--port", default=8000, help="Port to run the backend API server on.")
-def web_cmd(port: int) -> None:
+@click.option("--verbose", is_flag=True, default=False, help="Show verbose HTTP access logs.")
+def web_cmd(port: int, verbose: bool) -> None:
     """Launch the FastAPI backend server for the web interface."""
     import uvicorn
     import webbrowser
     
-    print_info(f"Starting TeleFeed Web UI on http://127.0.0.1:{port}")
+    print_info(f"Starting TeleFeed Web UI on [bold]http://127.0.0.1:{port}[/bold]")
     
     # Open the browser automatically
     webbrowser.open(f"http://127.0.0.1:{port}")
@@ -379,7 +380,8 @@ def web_cmd(port: int) -> None:
         host="127.0.0.1",
         port=port,
         reload=False,
-        log_level="info",
+        log_level="info" if verbose else "warning",
+        access_log=verbose,
     )
 
 

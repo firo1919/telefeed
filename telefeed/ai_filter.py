@@ -363,6 +363,7 @@ def build_scorer(provider: str, model: str, api_key: str, base_url: str = "") ->
     elif provider in ("openai", "ollama", "openrouter"):
         effective_base_url = base_url or {
             "openrouter": "https://openrouter.ai/api/v1",
+            "ollama": "http://localhost:11434/v1",
         }.get(provider)
         return OpenAICompatibleScorer(
             model=model,
@@ -380,10 +381,6 @@ def build_scorer(provider: str, model: str, api_key: str, base_url: str = "") ->
         )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Backward-compat alias (used in tests)
-# ──────────────────────────────────────────────────────────────────────────────
-
 class AIScorer(GeminiScorer):
     """Backward-compatible alias for GeminiScorer. Use build_scorer() for new code."""
 
@@ -398,7 +395,6 @@ class AIScorer(GeminiScorer):
                 "Get a free key at https://aistudio.google.com/apikey"
             )
         return cls(api_key=api_key)
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Filtering helper used by cli.py

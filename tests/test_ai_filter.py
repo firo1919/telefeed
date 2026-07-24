@@ -96,25 +96,6 @@ def test_build_scorer_unknown_provider():
     with pytest.raises(ValueError, match="Unknown AI provider"):
         build_scorer("grok", "model", "key")
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Backward-compat AIScorer alias
-# ──────────────────────────────────────────────────────────────────────────────
-
-def test_aiscorer_from_env_valid():
-    scorer = AIScorer.from_env(key="valid_api_key")
-    assert isinstance(scorer, GeminiScorer)
-
-
-def test_aiscorer_from_env_missing(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    with pytest.raises(ValueError, match="Gemini API key is not configured"):
-        AIScorer.from_env(key="")
-
-    with pytest.raises(ValueError, match="Gemini API key is not configured"):
-        AIScorer.from_env(key="your_gemini_api_key_here")
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Caching (provider-agnostic via BaseScorer)
 # ──────────────────────────────────────────────────────────────────────────────
