@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/firo1919/telefeed/compare/v0.4.1...v0.4.2) (2026-07-24)
+
+
+### Bug Fixes
+
+* Update pyproject.toml to include openai and anthropic as required ([b46812a](https://github.com/firo1919/telefeed/commit/b46812ac18b74943454a47e7a35c66de9fa41e0e))
+* Update pyproject.toml to include openai and anthropic as required ([20808e0](https://github.com/firo1919/telefeed/commit/20808e0077f1d51e8a4964975f97a61879a9625c))
+
 ## [0.4.1](https://github.com/firo1919/telefeed/compare/v0.4.0...v0.4.1) (2026-07-24)
 
 
