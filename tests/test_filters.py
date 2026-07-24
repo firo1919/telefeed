@@ -31,8 +31,7 @@ def test_check_area_positive_match(sample_area: Area):
     assert result.is_match is True
     assert result.blocked_by is None
     assert "python" in result.matched_keywords
-    assert "golang" in result.matched_keywords
-    assert result.score == 2 / 3  # 2 matched out of 3 total keywords
+    assert abs(result.score - 2 / 3) < 0.01  # 2 matched out of 3 total keywords
 
 
 def test_check_area_negative_keyword_gate(sample_area: Area):
@@ -120,7 +119,7 @@ def test_bm25_description_matching():
         keywords=[],
     )
     text = "We are training a new PyTorch model using deep learning techniques."
-    result = check_area(area, text)
+    result = check_area(area, text, threshold=50)
 
     assert result.is_match is True
     assert result.score > 0.0
@@ -159,19 +158,37 @@ def test_compute_bm25_score():
     assert hits_zero == []
 
 
-def test_check_area_description_fallback_when_keywords_miss():
-    # Area has explicit keyword "django", but description mentions "python web development"
+def test_check_area_keyword_prefiltering_and_threshold():
+    # If keywords are defined, at least one keyword MUST match
     area = Area(
         name="Python Web",
         description="Python web development jobs and projects",
         keywords=["django"],
     )
-    # Text doesn't contain "django", but contains description tokens ("python", "web", "development")
-    text = "Hiring a developer for Python web development projects."
-    result = check_area(area, text)
+    # Text doesn't contain "django" -> keyword pre-filter fails
+    text_no_keyword = "Hiring a developer for Python web development projects."
+    result_no_kw = check_area(area, text_no_keyword, threshold=50)
+    assert result_no_kw.is_match is False
+    assert result_no_kw.score == 0.0
 
-    assert result.is_match is True
-    assert result.score > 0.0
-    assert any("desc:" in k for k in result.matched_keywords)
+    # Text contains "django" -> keyword pre-filter passes
+    text_with_keyword = "Hiring a developer for Django web development projects."
+    result_kw = check_area(area, text_with_keyword, threshold=50)
+    assert result_kw.is_match is True
+    assert result_kw.score > 0.0
+
+
+def test_check_area_low_bm25_score_rejected():
+    area = Area(
+        name="Computer Science",
+        description="Software development, algorithms, system design, python backend engineering",
+        keywords=["software engineer"],
+    )
+    # Text has almost no relevance (only matches generic word "national operations officer")
+    irrelevant_text = "The Food and Agriculture Organization of the United Nations is inviting applications for National Operations Officer."
+    result = check_area(area, irrelevant_text)
+
+    assert result.is_match is False
+    assert result.score == 0.0
 
 

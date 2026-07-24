@@ -66,7 +66,7 @@ class NotificationConfig:
 @dataclass
 class TeleFeedConfig:
     matcher: str = "keywords"
-    ai_threshold: int = 65
+    threshold: int = 65
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     ai: AIConfig = field(default_factory=AIConfig)
     notifications: NotificationConfig = field(default_factory=NotificationConfig)
@@ -75,6 +75,10 @@ class TeleFeedConfig:
     config_path: Path = DEFAULT_CONFIG_PATH
     db_path: Path = DEFAULT_DB_PATH
     session_path: Path = DEFAULT_SESSION_FILE
+
+    @property
+    def ai_threshold(self) -> int:
+        return self.threshold
 
 
 def get_config_path(custom_path: Optional[str] = None) -> Path:
@@ -170,12 +174,12 @@ def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
     if matcher not in ("keywords", "ai"):
         matcher = "keywords"
 
-    threshold = int(data.get("ai_threshold", 65))
+    threshold = int(data.get("threshold", data.get("ai_threshold", 65)))
     threshold = max(0, min(100, threshold))
 
     return TeleFeedConfig(
         matcher=matcher,
-        ai_threshold=threshold,
+        threshold=threshold,
         telegram=TelegramConfig(api_id=api_id, api_hash=api_hash, phone=phone),
         ai=AIConfig(provider=ai_provider, model=ai_model, api_key=ai_key, base_url=ai_base_url),
         notifications=NotificationConfig(
@@ -196,8 +200,8 @@ def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
 CONFIG_TEMPLATE = """# TeleFeed Configuration
 # Define credentials, notification settings, and areas of concern.
 
-matcher: ai              # 'keywords' or 'ai'
-ai_threshold: 65         # Relevance score threshold (0-100)
+matcher: keywords        # 'keywords' or 'ai'
+threshold: 65            # Minimum relevance score threshold (0-100) for both keyword & AI modes
 
 telegram:
   api_id: YOUR_TELEGRAM_API_ID

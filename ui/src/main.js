@@ -352,8 +352,9 @@ function renderSettings() {
 
     // Matcher
     $("#cfg-matcher").value = c.matcher || "keywords";
-    $("#cfg-threshold").value = c.ai_threshold ?? 65;
-    $("#cfg-threshold-val").innerText = c.ai_threshold ?? 65;
+    const threshVal = c.threshold ?? c.ai_threshold ?? 65;
+    $("#cfg-threshold").value = threshVal;
+    $("#cfg-threshold-val").innerText = threshVal;
 
     // Telegram
     const tg = c.telegram || {};
@@ -385,7 +386,9 @@ $("#btn-save-settings").addEventListener("click", () => {
     if (!globalConfig) globalConfig = {};
 
     globalConfig.matcher = $("#cfg-matcher").value;
-    globalConfig.ai_threshold = parseInt($("#cfg-threshold").value, 10);
+    const thresh = parseInt($("#cfg-threshold").value, 10);
+    globalConfig.threshold = thresh;
+    globalConfig.ai_threshold = thresh;
 
     globalConfig.telegram = {
         api_id: parseInt($("#cfg-api-id").value, 10) || 0,
@@ -651,6 +654,9 @@ function renderMatchCard(match, prepend = true) {
               ? '<span class="badge badge-gray">Archived</span>'
               : '<span class="badge badge-blue">New</span>';
 
+    const textLen = (match.text || "").length;
+    const isLongText = textLen > 200 || (match.text || "").includes("\n");
+
     el.innerHTML = `
     <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
       <div class="flex items-center gap-2 flex-wrap">
@@ -663,7 +669,12 @@ function renderMatchCard(match, prepend = true) {
         ${score !== null ? `<span class="font-mono font-bold text-sm ${scoreColor}">${score}</span>` : ""}
       </div>
     </div>
-    <div class="text-sm leading-relaxed line-clamp-4 hover:line-clamp-none transition-all mb-3 text-slate-200">${renderMarkdown(match.text)}</div>
+    <div class="match-text text-sm leading-relaxed line-clamp-4 transition-all mb-2 text-slate-200">${renderMarkdown(match.text)}</div>
+    ${
+        isLongText
+            ? `<button class="btn-toggle-expand text-xs text-blue-400 hover:text-blue-300 font-medium mb-3 flex items-center gap-1 focus:outline-none cursor-pointer"><span>Show more</span> <svg class="w-3 h-3 transition-transform duration-200 icon-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>`
+            : ""
+    }
     ${
         match.ai_reason
             ? `
@@ -694,6 +705,24 @@ function renderMatchCard(match, prepend = true) {
         $("#feed-container").appendChild(el);
     }
 
+    // Toggle card expansion on button click
+    const toggleBtn = el.querySelector(".btn-toggle-expand");
+    const matchTextEl = el.querySelector(".match-text");
+    if (toggleBtn && matchTextEl) {
+        toggleBtn.addEventListener("click", () => {
+            const isClamped = matchTextEl.classList.contains("line-clamp-4");
+            if (isClamped) {
+                matchTextEl.classList.remove("line-clamp-4");
+                toggleBtn.querySelector("span").innerText = "Show less";
+                toggleBtn.querySelector(".icon-arrow").classList.add("rotate-180");
+            } else {
+                matchTextEl.classList.add("line-clamp-4");
+                toggleBtn.querySelector("span").innerText = "Show more";
+                toggleBtn.querySelector(".icon-arrow").classList.remove("rotate-180");
+            }
+        });
+    }
+
     // Bind status buttons
     el.querySelectorAll(".btn-match-status").forEach((b) =>
         b.addEventListener("click", async () => {
@@ -704,7 +733,7 @@ function renderMatchCard(match, prepend = true) {
                 );
                 showToast(`Match ${b.dataset.status}.`);
                 // Reload
-                await loadMatches();
+                await loadMatches(currentPage);
             } catch {}
         }),
     );

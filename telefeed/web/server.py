@@ -245,7 +245,7 @@ def _run_doctor_sync() -> list[dict]:
 
     checks.append({
         "label": "Matcher mode",
-        "value": f"{cfg.matcher} (threshold: {cfg.ai_threshold})",
+        "value": f"{cfg.matcher} (threshold: {cfg.threshold}%)",
         "ok": True,
     })
 

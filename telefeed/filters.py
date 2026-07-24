@@ -126,15 +126,19 @@ def compute_bm25_score(
     return norm_score, matched_desc_tokens
 
 
-def check_area(area: Area, text: str) -> MatchResult:
+def check_area(area: Area, text: str, threshold: int = 65) -> MatchResult:
     """
-    Run keyword, description BM25, and negative-keyword checks against *text* for a single *area*.
+    Run keyword pre-filtering, BM25 relevance scoring, and threshold checks against *text* for a single *area*.
 
-    Returns a MatchResult. Call .is_match to know if it passed.
+    Pipeline:
+      1. Negative keyword gate — hard discard if hit.
+      2. Positive keyword pre-filter — if area has keywords, at least one positive keyword MUST match.
+      3. BM25 & keyword density relevance scoring (0.0 - 1.0).
+      4. Threshold check — score (converted to 0-100) must be >= threshold.
     """
     normalized = _normalize(text)
 
-    # --- Negative keyword gate (fast path) ---
+    # 1. Negative keyword gate
     for pat in area._neg_patterns:
         m = pat.search(normalized)
         if m:
@@ -145,40 +149,44 @@ def check_area(area: Area, text: str) -> MatchResult:
                 blocked_by=m.group(0),
             )
 
-    # --- Positive keyword hits ---
+    # 2. Positive keyword pre-filter (hard requirement if area has keywords)
     hits: list[str] = []
-    for kw, pat in zip(area.keywords, area._kw_patterns):
-        if pat.search(normalized):
-            hits.append(kw)
+    if area.keywords:
+        for kw, pat in zip(area.keywords, area._kw_patterns):
+            if pat.search(normalized):
+                hits.append(kw)
+        if not hits:
+            # Keywords defined, but none matched -> hard discard
+            return MatchResult(area=area, score=0.0, matched_keywords=[])
 
-    # --- BM25 Description & Keyword Scoring ---
+    # 3. BM25 & Keyword Relevance Scoring
     bm25_score, desc_hits = compute_bm25_score(area, text)
 
     if area.keywords:
-        kw_score = len(hits) / len(area.keywords)
-        if hits:
-            score = kw_score
-            matched = hits
-        elif desc_hits and bm25_score > 0.0:
-            score = round(0.5 * bm25_score, 3)
-            matched = [f"desc:{dh}" for dh in desc_hits]
-        else:
-            score = 0.0
-            matched = []
+        kw_ratio = len(hits) / len(area.keywords)
+        raw_score = max(kw_ratio, bm25_score)
+        matched = hits + [f"desc:{dh}" for dh in desc_hits]
     else:
-        score = bm25_score
+        raw_score = bm25_score
         matched = [f"desc:{dh}" for dh in desc_hits]
+
+    score = round(raw_score, 3)
+    score_pct = int(score * 100)
+
+    # 4. Enforce top-level threshold (0-100)
+    if score_pct < threshold:
+        return MatchResult(area=area, score=0.0, matched_keywords=[])
 
     return MatchResult(area=area, score=score, matched_keywords=matched)
 
 
-def check_all_areas(areas: list[Area], text: str) -> list[MatchResult]:
+def check_all_areas(areas: list[Area], text: str, threshold: int = 65) -> list[MatchResult]:
     """
-    Run every area against *text*.  Returns only the MatchResults that pass.
+    Run every area against *text*. Returns only the MatchResults that pass.
     """
     results: list[MatchResult] = []
     for area in areas:
-        result = check_area(area, text)
+        result = check_area(area, text, threshold=threshold)
         if result.is_match:
             results.append(result)
     return results
@@ -222,14 +230,14 @@ def load_matcher_config(config: dict) -> tuple[str, int]:
     Read top-level matcher settings from the config dict.
 
     Returns:
-        (matcher, ai_threshold)
+        (matcher, threshold)
 
-        matcher      : 'keywords' or 'ai'
-        ai_threshold : int 0-100 (minimum AI score to count as a match)
+        matcher   : 'keywords' or 'ai'
+        threshold : int 0-100 (minimum relevance threshold for both modes)
     """
     matcher = str(config.get("matcher", "keywords")).lower().strip()
     if matcher not in ("keywords", "ai"):
         matcher = "keywords"
-    threshold = int(config.get("ai_threshold", 65))
+    threshold = int(config.get("threshold", config.get("ai_threshold", 65)))
     threshold = max(0, min(100, threshold))
     return matcher, threshold

@@ -153,7 +153,8 @@ def test_load_telefeed_config_legacy_gemini_section(tmp_path: Path):
 
 
 def test_config_template_validity():
-    assert "matcher: ai" in CONFIG_TEMPLATE
+    assert "matcher:" in CONFIG_TEMPLATE
+    assert "threshold:" in CONFIG_TEMPLATE
     assert "telegram:" in CONFIG_TEMPLATE
     assert "notifications:" in CONFIG_TEMPLATE
     assert "areas:" in CONFIG_TEMPLATE

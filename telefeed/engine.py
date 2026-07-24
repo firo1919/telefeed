@@ -104,9 +104,9 @@ class TeleFeedEngine:
             return False
 
         if self.ai_scorer:
-            results = await ai_check_all_areas(areas_for_channel, msg.text, self.ai_scorer, self.config.ai_threshold)
+            results = await ai_check_all_areas(areas_for_channel, msg.text, self.ai_scorer, self.config.threshold)
         else:
-            results = check_all_areas(areas_for_channel, msg.text)
+            results = check_all_areas(areas_for_channel, msg.text, threshold=self.config.threshold)
 
         if not results:
             return False
