@@ -105,6 +105,7 @@ def get_matches(
     area: Optional[str] = None,
     status: Optional[str] = None,
     limit: int = 50,
+    offset: int = 0,
 ) -> list[sqlite3.Row]:
     """Retrieve saved matches, optionally filtered by area and/or status."""
     query = "SELECT * FROM matches"
@@ -121,11 +122,36 @@ def get_matches(
     if clauses:
         query += " WHERE " + " AND ".join(clauses)
 
-    query += " ORDER BY matched_at DESC LIMIT ?"
+    query += " ORDER BY matched_at DESC LIMIT ? OFFSET ?"
     params.append(limit)
+    params.append(offset)
 
     with _conn(db_path) as con:
         return con.execute(query, params).fetchall()
+
+
+def count_matches(
+    db_path: str,
+    area: Optional[str] = None,
+    status: Optional[str] = None,
+) -> int:
+    """Return total count of matches matching the filter criteria."""
+    query = "SELECT COUNT(*) FROM matches"
+    params: list = []
+    clauses: list[str] = []
+
+    if area:
+        clauses.append("area = ?")
+        params.append(area)
+    if status:
+        clauses.append("status = ?")
+        params.append(status)
+
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+
+    with _conn(db_path) as con:
+        return con.execute(query, params).fetchone()[0]
 
 
 def update_match_status(db_path: str, match_id: int, new_status: str) -> None:

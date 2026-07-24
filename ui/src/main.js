@@ -7,8 +7,9 @@ let globalConfig = null;
 let editingAreaIdx = -1; // -1 = new, >=0 = editing
 let confirmCallback = null;
 let logAutoRefreshTimer = null;
-let matchOffset = 0;
-const MATCH_PAGE_SIZE = 20;
+let currentPage = 1;
+let totalMatchesCount = 0;
+const MATCH_PAGE_SIZE = 10;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DOM Refs
@@ -709,45 +710,70 @@ function renderMatchCard(match, prepend = true) {
     );
 }
 
-async function loadMatches(append = false) {
-    if (!append) matchOffset = 0;
+async function loadMatches(page = 1) {
+    currentPage = page;
+    const offset = (currentPage - 1) * MATCH_PAGE_SIZE;
     const area = $("#filter-area").value;
     const status = $("#filter-status").value;
-    let url = `/api/matches?limit=${MATCH_PAGE_SIZE}&offset=${matchOffset}`;
+    let url = `/api/matches?limit=${MATCH_PAGE_SIZE}&offset=${offset}`;
     if (area) url += `&area=${encodeURIComponent(area)}`;
     if (status) url += `&status=${encodeURIComponent(status)}`;
 
     try {
-        const matches = await fetch(url).then((r) => r.json());
+        const res = await fetch(url).then((r) => r.json());
+        const matches = Array.isArray(res) ? res : res.items || [];
+        totalMatchesCount = Array.isArray(res)
+            ? matches.length
+            : res.total || 0;
 
-        if (!append) {
-            $("#feed-container").innerHTML = "";
-        }
+        $("#feed-container").innerHTML = "";
 
-        if (matches.length === 0 && matchOffset === 0) {
+        if (matches.length === 0) {
             $("#feed-container").innerHTML =
                 `<div id="feed-placeholder" class="glass-panel p-10 text-center text-slate-500 italic text-sm">No matches found.</div>`;
-            $("#btn-load-more").classList.add("hidden");
-            return;
-        }
-
-        // Render oldest first so newest ends at top
-        const ordered = [...matches].reverse();
-        ordered.forEach((m) => renderMatchCard(m, !append));
-
-        // Show/hide load more
-        if (matches.length >= MATCH_PAGE_SIZE) {
-            matchOffset += matches.length;
-            $("#btn-load-more").classList.remove("hidden");
         } else {
-            $("#btn-load-more").classList.add("hidden");
+            matches.forEach((m) => renderMatchCard(m, false));
         }
+
+        updatePaginationUI(matches.length, offset);
     } catch {}
 }
 
-$("#btn-load-more").addEventListener("click", () => loadMatches(true));
-$("#filter-area").addEventListener("change", () => loadMatches());
-$("#filter-status").addEventListener("change", () => loadMatches());
+function updatePaginationUI(pageItemsCount, offset) {
+    const totalPages = Math.ceil(totalMatchesCount / MATCH_PAGE_SIZE) || 1;
+    const start = totalMatchesCount === 0 ? 0 : offset + 1;
+    const end = offset + pageItemsCount;
+
+    const pageInfo = $("#page-info");
+    if (pageInfo) {
+        pageInfo.innerText = `Showing ${start}-${end} of ${totalMatchesCount} matches`;
+    }
+
+    const pageNum = $("#page-number");
+    if (pageNum) {
+        pageNum.innerText = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    const btnPrev = $("#btn-prev-page");
+    if (btnPrev) {
+        btnPrev.disabled = currentPage <= 1;
+    }
+
+    const btnNext = $("#btn-next-page");
+    if (btnNext) {
+        btnNext.disabled = currentPage >= totalPages;
+    }
+}
+
+$("#btn-prev-page")?.addEventListener("click", () => {
+    if (currentPage > 1) loadMatches(currentPage - 1);
+});
+$("#btn-next-page")?.addEventListener("click", () => {
+    const totalPages = Math.ceil(totalMatchesCount / MATCH_PAGE_SIZE) || 1;
+    if (currentPage < totalPages) loadMatches(currentPage + 1);
+});
+$("#filter-area").addEventListener("change", () => loadMatches(1));
+$("#filter-status").addEventListener("change", () => loadMatches(1));
 
 function populateAreaFilter() {
     const sel = $("#filter-area");
@@ -766,7 +792,15 @@ function connectWebSocket() {
     ws.onopen = () => updateWsStatus("connected", "Live");
     ws.onmessage = (e) => {
         try {
-            renderMatchCard(JSON.parse(e.data), true);
+            totalMatchesCount++;
+            if (currentPage === 1) {
+                renderMatchCard(JSON.parse(e.data), true);
+                const items = $("#feed-container").children;
+                if (items.length > MATCH_PAGE_SIZE) {
+                    items[items.length - 1].remove();
+                }
+                updatePaginationUI(items.length, 0);
+            }
         } catch {}
     };
     ws.onclose = () => {

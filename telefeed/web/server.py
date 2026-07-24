@@ -27,7 +27,7 @@ from telefeed.config import (
     load_telefeed_config,
 )
 from telefeed.service import install_service, service_action, uninstall_service
-from telefeed.store import get_matches, init_db, update_match_status
+from telefeed.store import count_matches, get_matches, init_db, update_match_status
 
 logger = logging.getLogger("telefeed.web")
 
@@ -306,17 +306,26 @@ async def test_notification():
 
 @app.get("/api/matches")
 async def list_matches(
-    limit: int = 50,
+    limit: int = 20,
     offset: int = 0,
     area: Optional[str] = None,
     status: Optional[str] = None,
 ):
-    """Retrieve matches with optional filtering."""
+    """Retrieve matches with optional filtering and pagination metadata."""
     try:
         rows = await asyncio.to_thread(
-            get_matches, str(DEFAULT_DB_PATH), area=area, status=status, limit=limit
+            get_matches, str(DEFAULT_DB_PATH), area=area, status=status, limit=limit, offset=offset
         )
-        return [dict(row) for row in rows]
+        total = await asyncio.to_thread(
+            count_matches, str(DEFAULT_DB_PATH), area=area, status=status
+        )
+        items = [dict(row) for row in rows]
+        return {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
