@@ -355,6 +355,7 @@ function renderSettings() {
     const threshVal = c.threshold ?? c.ai_threshold ?? 65;
     $("#cfg-threshold").value = threshVal;
     $("#cfg-threshold-val").innerText = threshVal;
+    if ($("#cfg-backfill-days")) $("#cfg-backfill-days").value = c.backfill_days ?? 7;
 
     // Telegram
     const tg = c.telegram || {};
@@ -389,6 +390,9 @@ $("#btn-save-settings").addEventListener("click", () => {
     const thresh = parseInt($("#cfg-threshold").value, 10);
     globalConfig.threshold = thresh;
     globalConfig.ai_threshold = thresh;
+    if ($("#cfg-backfill-days")) {
+        globalConfig.backfill_days = parseInt($("#cfg-backfill-days").value, 10) || 7;
+    }
 
     globalConfig.telegram = {
         api_id: parseInt($("#cfg-api-id").value, 10) || 0,

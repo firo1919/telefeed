@@ -411,7 +411,8 @@ async def get_service_logs():
 
 @app.post("/api/fetch")
 async def manual_fetch(
-    limit: int = 50,
+    limit: Optional[int] = None,
+    backfill_days: Optional[int] = None,
     no_groups: bool = False,
     no_save: bool = False,
 ):
@@ -447,9 +448,11 @@ async def manual_fetch(
             ai_scorer=ai_scorer,
         )
 
+        days = backfill_days if backfill_days is not None else cfg.backfill_days
+
         async def _run():
             try:
-                await engine.run_fetch(limit, no_groups, no_save)
+                await engine.run_fetch(limit=limit, no_groups=no_groups, no_save=no_save, backfill_days=days)
             except Exception as exc:
                 logger.error(f"Background fetch failed: {exc}")
             finally:

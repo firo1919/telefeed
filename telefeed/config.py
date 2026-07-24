@@ -67,6 +67,7 @@ class NotificationConfig:
 class TeleFeedConfig:
     matcher: str = "keywords"
     threshold: int = 65
+    backfill_days: int = 7
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     ai: AIConfig = field(default_factory=AIConfig)
     notifications: NotificationConfig = field(default_factory=NotificationConfig)
@@ -177,9 +178,13 @@ def load_telefeed_config(custom_path: Optional[str] = None) -> TeleFeedConfig:
     threshold = int(data.get("threshold", data.get("ai_threshold", 65)))
     threshold = max(0, min(100, threshold))
 
+    backfill_days = int(data.get("backfill_days", 7))
+    backfill_days = max(1, min(365, backfill_days))
+
     return TeleFeedConfig(
         matcher=matcher,
         threshold=threshold,
+        backfill_days=backfill_days,
         telegram=TelegramConfig(api_id=api_id, api_hash=api_hash, phone=phone),
         ai=AIConfig(provider=ai_provider, model=ai_model, api_key=ai_key, base_url=ai_base_url),
         notifications=NotificationConfig(
@@ -202,6 +207,7 @@ CONFIG_TEMPLATE = """# TeleFeed Configuration
 
 matcher: keywords        # 'keywords' or 'ai'
 threshold: 65            # Minimum relevance score threshold (0-100) for both keyword & AI modes
+backfill_days: 7         # Days of history to scan when backfilling
 
 telegram:
   api_id: YOUR_TELEGRAM_API_ID

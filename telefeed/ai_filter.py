@@ -379,27 +379,6 @@ def build_scorer(provider: str, model: str, api_key: str, base_url: str = "") ->
             "Supported providers: gemini, openai, anthropic, ollama, openrouter"
         )
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Backward-compat alias (used in tests)
-# ──────────────────────────────────────────────────────────────────────────────
-
-class AIScorer(GeminiScorer):
-    """Backward-compatible alias for GeminiScorer. Use build_scorer() for new code."""
-
-    @classmethod
-    def from_env(cls, key: str = "") -> "AIScorer":
-        api_key = key or os.getenv("GEMINI_API_KEY", "")
-        if not api_key or api_key == "your_gemini_api_key_here":
-            raise ValueError(
-                "Gemini API key is not configured.\n"
-                "Add 'api_key' under 'ai:' in your config.yaml "
-                "or set GEMINI_API_KEY in environment.\n"
-                "Get a free key at https://aistudio.google.com/apikey"
-            )
-        return cls(api_key=api_key)
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Filtering helper used by cli.py
 # ──────────────────────────────────────────────────────────────────────────────
