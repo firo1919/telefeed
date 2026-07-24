@@ -110,3 +110,68 @@ def test_load_matcher_config():
 
     m, t = load_matcher_config({"ai_threshold": -20})
     assert t == 0
+
+
+def test_bm25_description_matching():
+    # Area with no explicit keywords, only description
+    area = Area(
+        name="Machine Learning",
+        description="Deep learning models, PyTorch training, and neural networks",
+        keywords=[],
+    )
+    text = "We are training a new PyTorch model using deep learning techniques."
+    result = check_area(area, text)
+
+    assert result.is_match is True
+    assert result.score > 0.0
+    assert any("pytorch" in k for k in result.matched_keywords)
+
+
+def test_extract_description_tokens():
+    from telefeed.filters import extract_description_tokens
+    tokens = extract_description_tokens("Looking for a Senior Python Developer with FastAPI experience.")
+    assert "senior" in tokens
+    assert "python" in tokens
+    assert "developer" in tokens
+    assert "fastapi" in tokens
+    assert "experience" in tokens
+    # Stop words like "looking", "for", "a", "with" should be removed
+    assert "looking" not in tokens
+    assert "for" not in tokens
+    assert "with" not in tokens
+
+
+def test_compute_bm25_score():
+    from telefeed.filters import compute_bm25_score
+    area = Area(
+        name="Backend",
+        description="Backend API microservices in Go and Rust",
+        keywords=["microservices"],
+    )
+    matching_text = "Hiring developers for building high performance microservices in Rust."
+    score, hits = compute_bm25_score(area, matching_text)
+    assert score > 0.0
+    assert "rust" in hits or "microservices" in area.keywords
+
+    non_matching_text = "Local bakery selling fresh bread and cakes."
+    score_zero, hits_zero = compute_bm25_score(area, non_matching_text)
+    assert score_zero == 0.0
+    assert hits_zero == []
+
+
+def test_check_area_description_fallback_when_keywords_miss():
+    # Area has explicit keyword "django", but description mentions "python web development"
+    area = Area(
+        name="Python Web",
+        description="Python web development jobs and projects",
+        keywords=["django"],
+    )
+    # Text doesn't contain "django", but contains description tokens ("python", "web", "development")
+    text = "Hiring a developer for Python web development projects."
+    result = check_area(area, text)
+
+    assert result.is_match is True
+    assert result.score > 0.0
+    assert any("desc:" in k for k in result.matched_keywords)
+
+
