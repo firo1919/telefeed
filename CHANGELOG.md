@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/firo1919/telefeed/compare/v0.4.0...v0.4.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* service.py to fix wrong service file location ([5fb4811](https://github.com/firo1919/telefeed/commit/5fb481124fe153d79a50a42be3e39f1b072145e6))
+* service.py to fix wrong service file location ([840905c](https://github.com/firo1919/telefeed/commit/840905c8b2320a9b27f0fd579a8dd918e650cfde))
+
 ## [0.4.0](https://github.com/firo1919/telefeed/compare/v0.3.0...v0.4.0) (2026-07-24)
 
 
