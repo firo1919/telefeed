@@ -227,7 +227,17 @@ class TeleFeedClient:
             f"Watching [bold]{len(resolved_entities)}[/bold] channel(s) in real-time. "
             "Press [bold]Ctrl-C[/bold] to stop.\n"
         )
-        await self._client.run_until_disconnected()
+        while True:
+            try:
+                await self._client.run_until_disconnected()
+                break
+            except (ConnectionError, OSError) as exc:
+                print_warning(f"Telegram connection reset ({exc}) — reconnecting in 5s…")
+                await asyncio.sleep(5)
+                try:
+                    await self._client.connect()
+                except Exception:
+                    pass
 
 
     # ──────────────────────────────────────────────────────────────────────────
