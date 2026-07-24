@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.3](https://github.com/firo1919/telefeed/compare/v0.4.2...v0.4.3) (2026-07-24)
+
+
+### Bug Fixes
+
+* Add support for Ollama provider in AI scorer and create backward-compatible alias for GeminiScorer ([cba64c9](https://github.com/firo1919/telefeed/commit/cba64c98fcf439c4f02840c7daf05ae3d9c8655f))
+* backfill_days config and UI input handling ([cf6f3bd](https://github.com/firo1919/telefeed/commit/cf6f3bd47b22d43cc14001b9092008b2d6aae51f))
+* input field class name in index.html ([468ef47](https://github.com/firo1919/telefeed/commit/468ef470bedd8e5fd317881ee92596ec934ddda8))
+* masked input for OTP and 2FA password prompts and added verbose option for web command ([36621e3](https://github.com/firo1919/telefeed/commit/36621e3d0ef26ed5816f5c143d92bd7638168639))
+* removed auto-refresh toggle and added auto-refresh indicator ([6cb50ae](https://github.com/firo1919/telefeed/commit/6cb50aecbc334c5119364dbac158476fbfe32db6))
+
 ## [0.4.2](https://github.com/firo1919/telefeed/compare/v0.4.1...v0.4.2) (2026-07-24)
 
 
