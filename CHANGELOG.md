@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/firo1919/telefeed/compare/v0.3.0...v0.4.0) (2026-07-24)
+
+
+### Features
+
+* added BM25 relevance scoring for area descriptions ([410a560](https://github.com/firo1919/telefeed/commit/410a560b801f8ceae4da2327c6085c8ceda3d57c))
+* pagination for match feed with prev/next buttons ([4e2d6d3](https://github.com/firo1919/telefeed/commit/4e2d6d3184ac0cef6cb81e48f30e6062fbe86f43))
+
+
+### Bug Fixes
+
+* removed unread requirement backfill logic to fetch all messages for channels ([2a4c117](https://github.com/firo1919/telefeed/commit/2a4c1177bbf0f4b7e2c5ff21789d964256f219dc))
+
 ## [0.3.0](https://github.com/firo1919/telefeed/compare/v0.2.0...v0.3.0) (2026-07-22)
 
 
