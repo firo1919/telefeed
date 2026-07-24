@@ -18,7 +18,8 @@ from telefeed.display import print_error, print_info, print_success, print_warni
 
 IS_WINDOWS = platform.system().lower() == "windows"
 
-SYSTEMD_USER_DIR = DEFAULT_CONFIG_DIR / "systemd" / "user"
+xdg_config_base = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
+SYSTEMD_USER_DIR = xdg_config_base / "systemd" / "user"
 SERVICE_FILE_PATH = SYSTEMD_USER_DIR / "telefeed.service"
 
 if IS_WINDOWS:
