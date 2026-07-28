@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.4](https://github.com/firo1919/telefeed/compare/v0.4.3...v0.4.4) (2026-07-28)
+
+
+### Bug Fixes
+
+* removed positive keyword prefilter ([08344ee](https://github.com/firo1919/telefeed/commit/08344eee5da6d6c00610dd7107bcf3aae9be2075))
+* removed positive keyword prefilter ([6141730](https://github.com/firo1919/telefeed/commit/614173073a9638ff97f901a36345459fa24618b3))
+
 ## [0.4.3](https://github.com/firo1919/telefeed/compare/v0.4.2...v0.4.3) (2026-07-24)
 
 
