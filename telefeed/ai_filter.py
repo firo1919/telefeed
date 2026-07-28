@@ -39,6 +39,7 @@ _SYSTEM = (
 
 _USER_TMPL = """\
 Interest area: "{area_name}"
+Keywords of interest: {keywords}
 User's goal / description:
 {description}
 
@@ -51,7 +52,7 @@ Reply ONLY with this exact JSON (no other text):
 {{"match": true_or_false, "score": 0_to_100, "reason": "one concise sentence"}}
 
 Guidelines:
-- score 0-100 reflects how relevant the message is to the goal
+- score 0-100 reflects how relevant the message is to the keywords and goal
 - match is true only when score >= {threshold}
 - reason must be a single sentence (≤ 20 words)
 - If the message is unrelated, off-topic, or just noise, match: false
@@ -117,9 +118,10 @@ class BaseScorer(abc.ABC):
         description: str,
         text: str,
         threshold: int = 65,
+        keywords: Optional[list[str]] = None,
     ) -> tuple[bool, int, str]:
         """
-        Score *text* against an area's *description*.
+        Score *text* against an area's *description* and *keywords*.
 
         Returns:
             (match: bool, score: int 0-100, reason: str)
@@ -127,13 +129,16 @@ class BaseScorer(abc.ABC):
         On any API error returns (False, 0, "<error>") without raising,
         so a single bad response never breaks the whole run.
         """
-        cache_key = (area_name, text[:300])
+        kw_list = keywords if isinstance(keywords, (list, set, tuple)) else None
+        kw_str = ", ".join(kw_list) if kw_list else "(none specified)"
+        cache_key = (area_name, text[:300], kw_str)
         if cache_key in self._cache:
             self.calls_cached += 1
             return self._cache[cache_key]
 
         prompt = _USER_TMPL.format(
             area_name=area_name,
+            keywords=kw_str,
             description=description.strip() or "(no description provided)",
             text=text[:2000],
             threshold=threshold,
@@ -411,10 +416,8 @@ async def ai_check_all_areas(
 
     Pipeline per area:
       1. Negative keyword gate — hard discard (no AI call)
-      2. Positive keyword pre-filter — if area has keywords, at least one must hit
-         (saves AI quota; areas with no keywords bypass this step)
-      3. AI scores the message vs. the area's description
-      4. Return MatchResult only if score >= threshold
+      2. AI scores the message vs. the area's description
+      3. Return MatchResult only if score >= threshold
 
     Returns a list of MatchResult objects (same type as keyword mode).
     """
@@ -428,15 +431,12 @@ async def ai_check_all_areas(
         if kw_result.blocked_by is not None:
             continue  # hard discard — don't even call AI
 
-        # ── Step 2: positive keyword pre-filter ───────────────────────────────
-        if area.keywords and not kw_result.is_match:
-            continue
-
-        # ── Step 3: AI scoring ────────────────────────────────────────────────
+        # ── Step 2: AI scoring (keywords included in AI prompt) ───────────────
         match, score, reason = await scorer.score(
             area_name=area.name,
             description=area.description,
             text=text,
+            keywords=area.keywords,
             threshold=threshold,
         )
 

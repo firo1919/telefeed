@@ -210,10 +210,10 @@ async def test_ai_check_all_areas_pipeline():
         res1 = await ai_check_all_areas([area_with_keywords], "Unpaid internship for python dev", scorer, threshold=65)
         assert len(res1) == 0
 
-        # Case 2: no keywords in AI Area → bypasses pre-filter → goes straight to AI
-        res2 = await ai_check_all_areas(areas=[area_no_keywords], text="New paper on LLM agent architecture published.", scorer=scorer, threshold=65)
+        # Case 2: keywords are passed into AI prompt and evaluated by AI
+        res2 = await ai_check_all_areas(areas=[area_with_keywords], text="Senior Django engineer role available.", scorer=scorer, threshold=65)
         assert len(res2) == 1
-        assert res2[0].area.name == "AI Area"
+        assert res2[0].area.name == "Python Area"
         assert res2[0].score == 0.88
         assert res2[0].ai_reason == "Matches AI description"
 
