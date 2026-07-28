@@ -14,6 +14,8 @@ from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
+from telefeed import __version__
+
 console = Console()
 
 
@@ -30,7 +32,7 @@ BANNER = r"""
      ╚═╝   ╚══════╝╚══════╝╚══════╝    ╚═╝     ╚══════╝╚══════╝╚═════╝
 """
 
-SUBTITLE = "  📡  Personalized Telegram Feed — v0.1.0"
+SUBTITLE = f"  📡  Personalized Telegram Feed — v{__version__}"
 
 
 def print_banner() -> None:
